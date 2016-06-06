@@ -31,8 +31,11 @@ For most drivers, this is all you need:
 
 # Notes
 
-It's important that you ensure public listing is disabled on your container/bucket.
-`ckanext-cloudstorage` does not currently implement access restrictions.
+1. It's important that you ensure public listing is disabled on your
+   container/bucket.  `ckanext-cloudstorage` does not currently implement
+   access restrictions.
+2. Currently, only resources are supported. This means that things like group
+   and organization images still use CKAN's local file storage.
 
 [libcloud]: https://libcloud.apache.org/
 [ckan]: http://ckan.org/
