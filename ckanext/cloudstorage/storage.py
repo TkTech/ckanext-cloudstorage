@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import re
 import cgi
 import os.path
 from ast import literal_eval
@@ -11,8 +10,6 @@ from ckan.lib import munge
 
 from libcloud.storage.types import Provider
 from libcloud.storage.providers import get_driver
-
-non_alpha = re.compile(u'[^A-Z]+', re.UNICODE)
 
 
 class CloudStorage(object):
@@ -33,14 +30,6 @@ class CloudStorage(object):
 
     def path_from_filename(self, rid, filename):
         raise NotImplemented
-
-    def prefix_from_filename(self, filename):
-        # We want to prefix our buckets by the first two
-        # ascii letters, or 00 if we can't find any. Non-prefixed
-        # LIST operations are among the most expensive on all providers,
-        # so this lets us do cheaper LISTs.
-        prefix = non_alpha.sub('', filename.upper())[:2]
-        return prefix if len(prefix) == 2 else '00'
 
 
 class ResourceCloudStorage(CloudStorage):
@@ -87,8 +76,7 @@ class ResourceCloudStorage(CloudStorage):
         :param filename: The unmunged resource filename.
         """
         return os.path.join(
-            '/resources',
-            self.prefix_from_filename(filename),
+            'resources',
             rid,
             munge.munge_filename(filename)
         )
