@@ -3,6 +3,7 @@
 import cgi
 import os.path
 from ast import literal_eval
+from datetime import datetime, timedelta
 
 from pylons import config
 from ckan import model
@@ -17,19 +18,31 @@ class CloudStorage(object):
         self.driver = get_driver(
             getattr(
                 Provider,
-                config['ckanext.cloudstorage.driver']
+                self.driver_name
             )
-        )(
-            **literal_eval(
-                config['ckanext.cloudstorage.driver_options']
-            )
-        )
+        )(**self.driver_options)
         self.container = self.driver.get_container(
-            container_name=config['ckanext.cloudstorage.container_name']
+            container_name=self.container_name
         )
 
     def path_from_filename(self, rid, filename):
         raise NotImplemented
+
+    @property
+    def driver_options(self):
+        return literal_eval(config['ckanext.cloudstorage.driver_options'])
+
+    @property
+    def driver_name(self):
+        return config['ckanext.cloudstorage.driver']
+
+    @property
+    def container_name(self):
+        return config['ckanext.cloudstorage.container_name']
+
+    @property
+    def use_secure_urls(self):
+        return bool(int(config.get('ckanext.cloudstorage.use_secure_urls', 0)))
 
 
 class ResourceCloudStorage(CloudStorage):
@@ -45,6 +58,7 @@ class ResourceCloudStorage(CloudStorage):
         self.filename = None
         self.old_filename = None
         self.file = None
+        self.resource = resource
 
         upload_field_storage = resource.pop('upload', None)
         self._clear = resource.pop('clear_upload', None)
@@ -96,6 +110,7 @@ class ResourceCloudStorage(CloudStorage):
                     self.filename
                 )
             )
+
         elif self._clear and self.old_filename:
             # This is only set when a previously-uploaded file is replace
             # by a link. We want to delete the previously-uploaded file.
@@ -125,6 +140,28 @@ class ResourceCloudStorage(CloudStorage):
         """
         # Find the key the file *should* be stored at.
         path = self.path_from_filename(rid, filename)
+
+        # If advanced azure features are enabled, generate a temporary
+        # shared access link instead of simply redirecting to the file.
+        if self.can_use_advanced_azure and self.use_secure_urls:
+            from azure.storage import blob as azure_blob
+
+            blob_service = azure_blob.BlockBlobService(
+                self.driver_options['key'],
+                self.driver_options['secret']
+            )
+
+            return blob_service.make_blob_url(
+                container_name=self.container_name,
+                blob_name=path,
+                sas_token=blob_service.generate_blob_shared_access_signature(
+                    container_name=self.container_name,
+                    blob_name=path,
+                    expiry=datetime.utcnow() + timedelta(hours=1),
+                    permission=azure_blob.BlobPermissions.READ
+                )
+            )
+
         # Find the object for the given key.
         obj = self.container.get_object(path)
         if obj is None:
@@ -137,3 +174,25 @@ class ResourceCloudStorage(CloudStorage):
 
         # Not supported by all providers!
         return self.driver.get_object_cdn_url(obj)
+
+    @property
+    def can_use_advanced_azure(self):
+        """
+        True if we can use advanced Azure features, otherwise False.
+        """
+        # Are we even using Azure?
+        if self.driver_name == 'AZURE_BLOBS':
+            try:
+                # Yes? Is the azure-storage package available?
+                from azure import storage
+                # Shut the linter up.
+                assert storage
+                return True
+            except ImportError:
+                pass
+
+        return False
+
+    @property
+    def package(self):
+        return model.Package.get(self.resource['package_id'])

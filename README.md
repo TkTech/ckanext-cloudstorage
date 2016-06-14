@@ -29,6 +29,14 @@ For most drivers, this is all you need:
 
     ckanext.cloudstorage.driver_options = {"key": "<your public key>", "secret": "<your secret key>"}
 
+If you're using Azure, you can install the `azure-storage` module to get
+improved behaviour. If the azure-storage module is found, then shared access
+urls can be enabled, allowing the container to disable public access and
+instead generating one-use URLs that expire after an hour. This prevents users
+that do not have access to a resource from viewing them.
+
+    ckanext.cloudstorage.use_secure_urls = 1
+
 # Notes
 
 1. It's important that you ensure public listing is disabled on your
