@@ -163,17 +163,11 @@ class ResourceCloudStorage(CloudStorage):
         # shared access link instead of simply redirecting to the file.
         if self.can_use_advanced_azure and self.use_secure_urls:
             from azure.storage import blob as azure_blob
-            from azure.storage import CorsRule
 
             blob_service = azure_blob.BlockBlobService(
                 self.driver_options['key'],
                 self.driver_options['secret']
             )
-
-            if 0:
-                blob_service.set_blob_service_properties(
-                    cors=[CorsRule(allowed_origins=['*'], allowed_methods=['GET'])]
-                )
 
             return blob_service.make_blob_url(
                 container_name=self.container_name,
