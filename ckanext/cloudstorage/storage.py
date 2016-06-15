@@ -44,6 +44,24 @@ class CloudStorage(object):
     def use_secure_urls(self):
         return bool(int(config.get('ckanext.cloudstorage.use_secure_urls', 0)))
 
+    @property
+    def can_use_advanced_azure(self):
+        """
+        True if we can use advanced Azure features, otherwise False.
+        """
+        # Are we even using Azure?
+        if self.driver_name == 'AZURE_BLOBS':
+            try:
+                # Yes? Is the azure-storage package available?
+                from azure import storage
+                # Shut the linter up.
+                assert storage
+                return True
+            except ImportError:
+                pass
+
+        return False
+
 
 class ResourceCloudStorage(CloudStorage):
     def __init__(self, resource):
@@ -145,11 +163,17 @@ class ResourceCloudStorage(CloudStorage):
         # shared access link instead of simply redirecting to the file.
         if self.can_use_advanced_azure and self.use_secure_urls:
             from azure.storage import blob as azure_blob
+            from azure.storage import CorsRule
 
             blob_service = azure_blob.BlockBlobService(
                 self.driver_options['key'],
                 self.driver_options['secret']
             )
+
+            if 0:
+                blob_service.set_blob_service_properties(
+                    cors=[CorsRule(allowed_origins=['*'], allowed_methods=['GET'])]
+                )
 
             return blob_service.make_blob_url(
                 container_name=self.container_name,
@@ -174,24 +198,6 @@ class ResourceCloudStorage(CloudStorage):
 
         # Not supported by all providers!
         return self.driver.get_object_cdn_url(obj)
-
-    @property
-    def can_use_advanced_azure(self):
-        """
-        True if we can use advanced Azure features, otherwise False.
-        """
-        # Are we even using Azure?
-        if self.driver_name == 'AZURE_BLOBS':
-            try:
-                # Yes? Is the azure-storage package available?
-                from azure import storage
-                # Shut the linter up.
-                assert storage
-                return True
-            except ImportError:
-                pass
-
-        return False
 
     @property
     def package(self):
