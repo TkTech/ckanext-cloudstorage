@@ -49,6 +49,16 @@ below have been tested:
 | AWS S3   | YES | YES | No |
 | Rackspace | YES | YES | No |
 
+# What are "Secure URLs"?
+
+"Secure URLs" are a method of preventing access to private resources. By
+default, anyone that figures out the URL to your resource on your storage
+provider can download it. Secure URLs allow you to disable public access and
+instead let ckanext-cloudstorage generate temporary, one-use URLs to download
+the resource. This means that the normal CKAN-provided access restrictions can
+apply to resources with no further effort on your part, but still get all the
+benefits of your CDN/blob storage.
+
 # Notes
 
 1. You should disable public listing on the cloud service provider you're
