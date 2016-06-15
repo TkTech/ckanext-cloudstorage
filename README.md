@@ -37,13 +37,32 @@ that do not have access to a resource from viewing them.
 
     ckanext.cloudstorage.use_secure_urls = 1
 
+
+# Support
+
+Most libcloud-based providers should work out of the box, but only those listed
+below have been tested:
+
+| Provider | Uploads | Downloads | Secure URLs (private resources) |
+| --- | --- | --- | --- |
+| Azure    | YES | YES | YES (if azure-storage is installed) |
+| AWS S3   | YES | YES | No |
+| Rackspace | YES | YES | No |
+
 # Notes
 
-1. It's important that you ensure public listing is disabled on your
-   container/bucket.  `ckanext-cloudstorage` does not currently implement
-   access restrictions.
+1. You should disable public listing on the cloud service provider you're
+   using, if supported.
 2. Currently, only resources are supported. This means that things like group
    and organization images still use CKAN's local file storage.
+
+# FAQ
+
+- *DataViews aren't showing my data!* - did you setup CORS rules properly on
+  your hosting service? ckanext-cloudstorage can try to fix them for you automatically,
+  run:
+
+        paster --plugin=ckanext-cloudstorage cloudstorage fix-cors <list of your domains> -c=<CKAN config>
 
 [libcloud]: https://libcloud.apache.org/
 [ckan]: http://ckan.org/
