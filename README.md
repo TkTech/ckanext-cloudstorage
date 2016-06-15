@@ -1,7 +1,7 @@
 # ckanext-cloudstorage
 
 Implements support for using S3, Azure, or any of 30+ providers supported by
-[libcloud]() to [CKAN]().
+[libcloud][] to [CKAN][].
 
 # Setup
 
@@ -10,7 +10,7 @@ your `.ini`:
 
     ckan.plugins = stats cloudstorage
 
-If you haven't already, setup [CKAN file storage](ckanstorage) or the file
+If you haven't already, setup [CKAN file storage][ckanstorage] or the file
 upload button will not appear.
 
 Every driver takes two options, regardless of which one you use. Both
@@ -20,10 +20,10 @@ case-sensitive:
     ckanext.cloudstorage.driver = AZURE_BLOBS
     ckanext.cloudstorage.container_name = demo
 
-You can find a list of driver names [here](storage) (see the `Provider
+You can find a list of driver names [here][storage] (see the `Provider
 Constant` column.)
 
-Each driver takes its own setup options. See the [libcloud]() documentation.
+Each driver takes its own setup options. See the [libcloud][] documentation.
 These options are passed in using `driver_options`, which is a Python dict.
 For most drivers, this is all you need:
 
