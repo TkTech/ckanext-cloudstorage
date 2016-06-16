@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import cgi
 import os.path
+import urlparse
 from ast import literal_eval
 from datetime import datetime, timedelta
 
@@ -191,7 +192,18 @@ class ResourceCloudStorage(CloudStorage):
             return obj.extra['url']
 
         # Not supported by all providers!
-        return self.driver.get_object_cdn_url(obj)
+        try:
+            return self.driver.get_object_cdn_url(obj)
+        except NotImplementedError:
+            if 'S3' in self.driver_name:
+                return urlparse.urljoin(
+                    'https://' + self.driver.connection.host,
+                    '{container}/{path}'.format(
+                        container=self.container_name,
+                        path=path
+                    )
+                )
+            raise
 
     @property
     def package(self):
