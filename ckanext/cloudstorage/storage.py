@@ -63,6 +63,24 @@ class CloudStorage(object):
 
         return False
 
+    @property
+    def can_use_advanced_aws(self):
+        """
+        True if we can use advancated AWS S3 features, otherwise False.
+        """
+        # Are we even using AWS?
+        if 'S3' in self.driver_name:
+            try:
+                # Yes? Is the boto package available?
+                import boto
+                # Shut the linter up.
+                assert boto
+                return True
+            except ImportError:
+                pass
+
+        return False
+
 
 class ResourceCloudStorage(CloudStorage):
     def __init__(self, resource):
@@ -180,16 +198,24 @@ class ResourceCloudStorage(CloudStorage):
                     permission=azure_blob.BlobPermissions.READ
                 )
             )
+        elif self.can_use_advanced_aws and self.use_secure_urls:
+            from boto.s3.connection import S3Connection
+            s3_connection = S3Connection(
+                self.driver_options['key'],
+                self.driver_options['secret']
+            )
+            return s3_connection.generate_url(
+                expires_in=60 * 60,
+                method='GET',
+                bucket=self.container_name,
+                query_auth=True,
+                key=path
+            )
 
         # Find the object for the given key.
         obj = self.container.get_object(path)
         if obj is None:
             return
-
-        # This extra 'url' property isn't documented anywhere, sadly.
-        # See azure_blobs.py:_xml_to_object for more.
-        if 'url' in obj.extra:
-            return obj.extra['url']
 
         # Not supported by all providers!
         try:
@@ -203,6 +229,10 @@ class ResourceCloudStorage(CloudStorage):
                         path=path
                     )
                 )
+            # This extra 'url' property isn't documented anywhere, sadly.
+            # See azure_blobs.py:_xml_to_object for more.
+            elif 'url' in obj.extra:
+                return obj.extra['url']
             raise
 
     @property
