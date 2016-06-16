@@ -29,15 +29,6 @@ For most drivers, this is all you need:
 
     ckanext.cloudstorage.driver_options = {"key": "<your public key>", "secret": "<your secret key>"}
 
-If you're using Azure, you can install the `azure-storage` module to get
-improved behaviour. If the azure-storage module is found, then shared access
-urls can be enabled, allowing the container to disable public access and
-instead generating one-use URLs that expire after an hour. This prevents users
-that do not have access to a resource from viewing them.
-
-    ckanext.cloudstorage.use_secure_urls = 1
-
-
 # Support
 
 Most libcloud-based providers should work out of the box, but only those listed
@@ -45,8 +36,8 @@ below have been tested:
 
 | Provider | Uploads | Downloads | Secure URLs (private resources) |
 | --- | --- | --- | --- |
-| Azure    | YES | YES | YES (if azure-storage is installed) |
-| AWS S3   | YES | YES | No |
+| Azure    | YES | YES | YES (if `azure-storage` is installed) |
+| AWS S3   | YES | YES | YES (if `boto` is installed) |
 | Rackspace | YES | YES | No |
 
 # What are "Secure URLs"?
@@ -58,6 +49,8 @@ instead let ckanext-cloudstorage generate temporary, one-use URLs to download
 the resource. This means that the normal CKAN-provided access restrictions can
 apply to resources with no further effort on your part, but still get all the
 benefits of your CDN/blob storage.
+
+    ckanext.cloudstorage.use_secure_urls = 1
 
 # Notes
 
@@ -73,6 +66,8 @@ benefits of your CDN/blob storage.
   run:
 
         paster --plugin=ckanext-cloudstorage cloudstorage fix-cors <list of your domains> -c=<CKAN config>
+
+- *Help! I can't seem to get it working!* - send me a mail! tk@tkte.ch
 
 [libcloud]: https://libcloud.apache.org/
 [ckan]: http://ckan.org/
