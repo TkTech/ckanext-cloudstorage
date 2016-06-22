@@ -31,24 +31,57 @@ class CloudStorage(object):
 
     @property
     def driver_options(self):
+        """
+        A dictionary of options ckanext-cloudstorage has been configured to
+        pass to the apache-libcloud driver.
+        """
         return literal_eval(config['ckanext.cloudstorage.driver_options'])
 
     @property
     def driver_name(self):
+        """
+        The name of the driver (ex: AZURE_BLOBS, S3) that ckanext-cloudstorage
+        is configured to use.
+
+
+        .. note::
+
+            This value is used to lookup the apache-libcloud driver to use
+            based on the Provider enum.
+        """
         return config['ckanext.cloudstorage.driver']
 
     @property
     def container_name(self):
+        """
+        The name of the container (also called buckets on some providers)
+        ckanext-cloudstorage is configured to use.
+        """
         return config['ckanext.cloudstorage.container_name']
 
     @property
     def use_secure_urls(self):
+        """
+        `True` if ckanext-cloudstroage is configured to generate secure
+        one-time URLs to resources, `False` otherwise.
+        """
         return bool(int(config.get('ckanext.cloudstorage.use_secure_urls', 0)))
+
+    @property
+    def leave_files(self):
+        """
+        `True` if ckanext-cloudstorage is configured to leave files on the
+        provider instead of removing them when a resource/package is deleted,
+        otherwise `False`.
+        """
+        return bool(int(config.get('ckanext.cloudstorage.leave_files', 0)))
 
     @property
     def can_use_advanced_azure(self):
         """
-        True if we can use advanced Azure features, otherwise False.
+        `True` if the `azure-storage` module is installed and
+        ckanext-cloudstorage has been configured to use Azure, otherwise
+        `False`.
         """
         # Are we even using Azure?
         if self.driver_name == 'AZURE_BLOBS':
@@ -66,7 +99,8 @@ class CloudStorage(object):
     @property
     def can_use_advanced_aws(self):
         """
-        True if we can use advancated AWS S3 features, otherwise False.
+        `True` if the `boto` module is installed and ckanext-cloudstorage has
+        been configured to use Amazon S3, otherwise `False`.
         """
         # Are we even using AWS?
         if 'S3' in self.driver_name:
@@ -148,7 +182,7 @@ class ResourceCloudStorage(CloudStorage):
                 )
             )
 
-        elif self._clear and self.old_filename:
+        elif self._clear and self.old_filename and not self.leave_files:
             # This is only set when a previously-uploaded file is replace
             # by a link. We want to delete the previously-uploaded file.
             self.container.delete_object(
