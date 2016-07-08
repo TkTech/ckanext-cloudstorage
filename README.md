@@ -52,6 +52,17 @@ benefits of your CDN/blob storage.
 
     ckanext.cloudstorage.use_secure_urls = 1
 
+# Migrating From FileStorage
+
+If you already have resources that have been uploaded and saved using CKAN's
+built-in FileStorage, cloudstorage provides an easy migration command.
+Simply setup cloudstorage as explained above, enable the plugin, and run the
+migrate command. Provide the path to your resources on-disk (the
+`ckan.storage_path` setting in your CKAN `.ini` + `/resources`), and
+cloudstorage will take care of the rest. Ex:
+
+    paster --plugin=ckanext-cloudstorage cloudstorage migrate <path to files> -c ../ckan/development.ini
+
 # Notes
 
 1. You should disable public listing on the cloud service provider you're
