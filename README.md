@@ -61,7 +61,7 @@ migrate command. Provide the path to your resources on-disk (the
 `ckan.storage_path` setting in your CKAN `.ini` + `/resources`), and
 cloudstorage will take care of the rest. Ex:
 
-    paster --plugin=ckanext-cloudstorage cloudstorage migrate <path to files> -c ../ckan/development.ini
+    paster cloudstorage migrate <path to files> -c ../ckan/development.ini
 
 # Notes
 
@@ -76,7 +76,7 @@ cloudstorage will take care of the rest. Ex:
   your hosting service? ckanext-cloudstorage can try to fix them for you automatically,
   run:
 
-        paster --plugin=ckanext-cloudstorage cloudstorage fix-cors <list of your domains> -c=<CKAN config>
+        paster cloudstorage fix-cors <list of your domains> -c=<CKAN config>
 
 - *Help! I can't seem to get it working!* - send me a mail! tk@tkte.ch
 
