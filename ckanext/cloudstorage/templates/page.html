@@ -1,0 +1,8 @@
+{% ckan_extends %}
+
+{% block scripts %}
+    {{ super() }}
+    {% resource 'cloudstorage/scripts/vendor/jquery-widget.js' %}
+    {% resource 'cloudstorage/scripts/vendor/file-upload.js' %}
+    {% resource 'cloudstorage/scripts/cloudstorage-multipart-upload.js' %}
+{% endblock %}

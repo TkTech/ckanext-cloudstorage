@@ -133,12 +133,19 @@ class ResourceCloudStorage(CloudStorage):
 
         upload_field_storage = resource.pop('upload', None)
         self._clear = resource.pop('clear_upload', None)
+        multipart_name = resource.pop('multipart_name', None)
 
         # Check to see if a file has been provided
         if isinstance(upload_field_storage, cgi.FieldStorage):
             self.filename = munge.munge_filename(upload_field_storage.filename)
             self.file_upload = upload_field_storage.file
             resource['url'] = self.filename
+            resource['url_type'] = 'upload'
+        elif multipart_name and self.can_use_advanced_aws:
+            # This means that file was successfully uploaded and stored
+            # at cloud.
+            # Currently implemented just AWS version
+            resource['url'] = munge.munge_filename(multipart_name)
             resource['url_type'] = 'upload'
         elif self._clear and resource.get('id'):
             # Apparently, this is a created-but-not-commited resource whose
