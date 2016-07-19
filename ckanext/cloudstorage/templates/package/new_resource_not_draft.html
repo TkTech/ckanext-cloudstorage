@@ -1,10 +1,10 @@
 {% ckan_extends %}
 
 
-{% block basic_fields_url %}
+{% block form %}
 
     <div {% if h.cloudstorage_use_secure_urls() -%}
-    data-module="cloudstorage-multipart-upload" data-module-cloud='S3' data-module-package-id={{ pkg_name }}
+    data-module="cloudstorage-multipart-upload" data-module-cloud='S3' data-module-package-id="_{{ pkg_name }}"
     {%- endif %}>
         {{ super() }}
 

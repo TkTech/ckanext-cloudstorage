@@ -20,13 +20,20 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
 
         initialize: function() {
             $.proxyAll(this, /_on/);
+            this.options.packageId = this.options.packageId.slice(1);
             this._form = this.el.closest('form');
             this._file = $('#field-image-upload');
             this._url = $('#field-image-url');
             this._save = $('[name=save]');
             this._id = $('input[name=id]');
-            this._progress = this.$('.progress')
-            this._bar = this._progress.find('.bar');
+            this._progress = $('<div>', {
+                class: 'hide controls progress progress-striped active'
+            })
+            this._bar = $('<div>', {class:'bar'});
+
+            this._progress.append(this._bar);
+            this._progress.insertAfter(this._file.parent().parent());
+
             var self = this;
 
             this._file.fileupload({
@@ -122,9 +129,6 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
             try{
                 this._onDisableSave(true);
                 this._onSaveForm(file);
-
-                this._onPerformUpload(file);
-
             } catch(error){
                 console.log(error);
                 this._onDisableSave(false);
@@ -142,6 +146,7 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
             }, {});
 
             formData['multipart_name'] = file.name;
+            formData['url'] = file.name;
             formData['package_id'] = this.options.packageId;
             var action = formData.id ? 'resource_update' : 'resource_create';
             var url = this._form.attr('action') || window.location.href;
@@ -160,6 +165,7 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
                         self.i18n(action, {id: result.id}),
                         'success'
                     )
+                    self._onPerformUpload(file);
                 },
                 function (err, st, msg) {
                     self.sandbox.notify(
