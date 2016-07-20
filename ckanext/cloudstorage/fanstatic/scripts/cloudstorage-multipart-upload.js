@@ -85,6 +85,10 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
                     name: 'uploadId',
                     value: this._uploadId
                 },
+                {
+                    name: 'id',
+                    value: this._resourceId
+                }
 
             ]
         },
