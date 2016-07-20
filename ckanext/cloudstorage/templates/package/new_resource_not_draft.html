@@ -3,12 +3,5 @@
 
 {% block form %}
 
-    <div {% if h.cloudstorage_use_secure_urls() -%}
-    data-module="cloudstorage-multipart-upload" data-module-cloud='S3' data-module-package-id="_{{ pkg_name }}"
-    {%- endif %}>
-        {{ super() }}
-
-
-
-    </div>
+     {% snippet 'cloudstorage/snippets/multipart_module.html', pkg_name=pkg_name, parent=super %}
 {% endblock %}

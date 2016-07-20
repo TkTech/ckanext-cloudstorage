@@ -21,8 +21,9 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
         initialize: function() {
             $.proxyAll(this, /_on/);
             this.options.packageId = this.options.packageId.slice(1);
-            this._form = this.el.closest('form');
+            this._form = this.$('form');
             this._file = $('#field-image-upload');
+            this._original_file = this._file;
             this._url = $('#field-image-url');
             this._save = $('[name=save]');
             this._id = $('input[name=id]');
@@ -30,15 +31,13 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
                 class: 'hide controls progress progress-striped active'
             })
             this._bar = $('<div>', {class:'bar'});
-
             this._progress.append(this._bar);
-            this._progress.insertAfter(this._file.parent().parent());
+            this._progress.insertAfter(this._url.parent().parent());
 
             var self = this;
 
             this._file.fileupload({
                 url: this.sandbox.client.url('/api/action/cloudstorage_upload_multipart'),
-                replaceFileInput: false,
                 maxChunkSize: 5 * 1024 * 1024,
                 add: this._onFileUploadAdd,
                 progressall: this._onFileUploadProgress,
@@ -51,14 +50,6 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
 
             this._save.on('click', this._onSaveClick);
 
-            // switch (this.options.cloud) {
-            //     case 'S3':
-            //     default:
-            //         this._onPrepareUpload = this._onPrepareUpload;
-            //         this._onUploadStarted = this._onUploadStarted;
-            //         this._onUploadSlice = this._onUploadSlice;
-            //         this._onAbortUpload = this._onAbortUpload;
-            // }
         },
 
         _onUploadFail: function (e, data) {
@@ -101,6 +92,15 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
         },
 
         _onFileUploadAdd: function (event, data) {
+            window.f = this
+            if (this._file !== this._original_file){
+                this._original_file.attr('type', 'text');
+                this._original_file.val(data.files[0].name);
+                this._original_file.trigger('change');
+
+            }
+            this._previous_file = this._file;
+            this._file = $(event.target);
 
             var chunkSize = $(event.target).fileupload('option', 'maxChunkSize');
 
@@ -120,15 +120,14 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
         },
 
         _onSaveClick: function(event, pass) {
-            if (pass || !window.FileList || !this._file || !this._file.val()) {
+            if (pass || !window.FileList || !this._file || !this._original_file.val()) {
                 return;
             }
             event.preventDefault();
-            var file = this._file[0].files[0];
 
             try{
                 this._onDisableSave(true);
-                this._onSaveForm(file);
+                this._onSaveForm();
             } catch(error){
                 console.log(error);
                 this._onDisableSave(false);
@@ -137,7 +136,8 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
             // this._form.trigger('submit', true);
         },
 
-        _onSaveForm: function(file) {
+        _onSaveForm: function() {
+            var file = this._previous_file[0].files[0]
             var self = this;
             var formData = this._form.serializeArray().reduce(
                 function (result, item) {
@@ -244,6 +244,7 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
                     )
                     self._progress.hide('fast')
                     self._onDisableSave(false);
+
                     if (self._resourceId && self._packageId){
                         // self._form.remove();
                         var redirect_url = self.sandbox.url(
