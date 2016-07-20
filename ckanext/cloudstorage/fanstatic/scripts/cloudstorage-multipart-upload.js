@@ -231,7 +231,8 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
                 'POST',
                 'cloudstorage_finish_multipart',
                 {
-                    'id': this._uploadId
+                    'uploadId': this._uploadId,
+                    'id': this._resourceId
                 },
                 function (data) {
                     self.sandbox.notify(

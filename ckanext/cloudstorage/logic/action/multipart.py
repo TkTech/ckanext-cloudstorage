@@ -94,8 +94,9 @@ def upload_multipart(context, data_dict):
 
     # import pdb; pdb.set_trace()
     resp = uploader.driver.connection.request(
-        _get_object_url(uploader, upload.name) + '?partNumber={0}&uploadId={1}'.format(
-            part_number, upload_id),
+        _get_object_url(
+            uploader, upload.name) + '?partNumber={0}&uploadId={1}'.format(
+                part_number, upload_id),
         method='PUT',
         data=bytearray(part_content.file.read())
     )
@@ -111,11 +112,12 @@ def upload_multipart(context, data_dict):
 
 def finish_multipart(context, data_dict):
     h.check_access('cloudstorage_finish_multipart', data_dict)
-    id = toolkit.get_or_bust(data_dict, 'id')
-    upload = model.Session.query(MultipartUpload).get(id)
+    upload_id = toolkit.get_or_bust(data_dict, 'uploadId')
+    upload = model.Session.query(MultipartUpload).get(upload_id)
     chunks = [
         (part.n, part.etag)
-        for part in model.Session.query(MultipartPart).filter_by(upload_id=id)
+        for part in model.Session.query(MultipartPart).filter_by(
+            upload_id=upload_id)
     ]
     uploader = ResourceCloudStorage({})
     try:
@@ -125,7 +127,7 @@ def finish_multipart(context, data_dict):
         pass
     uploader.driver._commit_multipart(
         _get_object_url(uploader, upload.name),
-        id,
+        upload_id,
         chunks)
     upload.delete()
     upload.commit()
