@@ -22,7 +22,7 @@ class CloudStoragePlugin(plugins.SingletonPlugin):
 
     def update_config(self, config):
         plugins.toolkit.add_template_directory(config, 'templates')
-        plugins.toolkit.add_resource('fanstatic', 'cloudstorage')
+        plugins.toolkit.add_resource('fanstatic/scripts', 'cloudstorage-js')
 
     # ITemplateHelpers
 

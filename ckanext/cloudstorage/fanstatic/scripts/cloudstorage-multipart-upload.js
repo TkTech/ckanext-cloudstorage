@@ -22,8 +22,9 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
             $.proxyAll(this, /_on/);
             this.options.packageId = this.options.packageId.slice(1);
             this._form = this.$('form');
+            // this._origin = $('#field-image-upload');
+            // this._file = this._origin.clone()
             this._file = $('#field-image-upload');
-            this._original_file = this._file;
             this._url = $('#field-image-url');
             this._save = $('[name=save]');
             this._id = $('input[name=id]');
@@ -39,6 +40,7 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
             this._file.fileupload({
                 url: this.sandbox.client.url('/api/action/cloudstorage_upload_multipart'),
                 maxChunkSize: 5 * 1024 * 1024,
+                replaceFileInput: false,
                 add: this._onFileUploadAdd,
                 progressall: this._onFileUploadProgress,
                 done: this._onFinishUpload,
@@ -92,15 +94,6 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
         },
 
         _onFileUploadAdd: function (event, data) {
-            window.f = this
-            if (this._file !== this._original_file){
-                this._original_file.attr('type', 'text');
-                this._original_file.val(data.files[0].name);
-                this._original_file.trigger('change');
-
-            }
-            this._previous_file = this._file;
-            this._file = $(event.target);
 
             var chunkSize = $(event.target).fileupload('option', 'maxChunkSize');
 
@@ -120,7 +113,7 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
         },
 
         _onSaveClick: function(event, pass) {
-            if (pass || !window.FileList || !this._file || !this._original_file.val()) {
+            if (pass || !window.FileList || !this._file || !this._file.val()) {
                 return;
             }
             event.preventDefault();
@@ -137,7 +130,7 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
         },
 
         _onSaveForm: function() {
-            var file = this._previous_file[0].files[0]
+            var file = this._file[0].files[0]
             var self = this;
             var formData = this._form.serializeArray().reduce(
                 function (result, item) {
