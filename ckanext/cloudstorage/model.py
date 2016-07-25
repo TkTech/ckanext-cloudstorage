@@ -6,10 +6,10 @@ from sqlalchemy import (
     UnicodeText,
     DateTime,
     ForeignKey,
-    Integer
+    Integer,
+    Numeric
 )
 from datetime import datetime
-from sqlalchemy.orm.exc import NoResultFound
 import ckan.model.meta as meta
 from ckan.model.domain_object import DomainObject
 
@@ -18,11 +18,11 @@ metadata = Base.metadata
 
 
 def drop_tables():
-  metadata.drop_all(model.meta.engine)
+    metadata.drop_all(model.meta.engine)
 
 
 def create_tables():
-  metadata.create_all(model.meta.engine)
+    metadata.create_all(model.meta.engine)
 
 
 class MultipartPart(Base, DomainObject):
@@ -40,17 +40,20 @@ class MultipartPart(Base, DomainObject):
         primary_key=True
     )
     upload = relationship(
-        'MultipartUpload', backref=backref('parts', cascade='delete, delete-orphan'),
+        'MultipartUpload',
+        backref=backref('parts', cascade='delete, delete-orphan'),
         single_parent=True)
 
 
 class MultipartUpload(Base, DomainObject):
     __tablename__ = 'cloudstorage_multipart_upload'
 
-    def __init__(self, id, resource_id, name):
+    def __init__(self, id, resource_id, name, size, original_name):
         self.id = id
         self.resource_id = resource_id
         self.name = name
+        self.size = size
+        self.original_name = original_name
 
     @classmethod
     def resource_uploads(cls, resource_id):
@@ -63,3 +66,5 @@ class MultipartUpload(Base, DomainObject):
     resource_id = Column(UnicodeText)
     name = Column(UnicodeText)
     initiated = Column(DateTime, default=datetime.utcnow)
+    size = Column(Numeric)
+    original_name = Column(UnicodeText)

@@ -39,6 +39,20 @@ def _save_part_info(n, etag, upload):
     return part
 
 
+def check_multipart(context, data_dict):
+    h.check_access('cloudstorage_check_multipart', data_dict)
+    id = toolkit.get_or_bust(data_dict, 'id')
+    try:
+        upload = model.Session.query(MultipartUpload).filter_by(
+            resource_id=id).one()
+    except NoResultFound:
+        return
+    upload_dict = upload.as_dict()
+    upload_dict['parts'] = model.Session.query(MultipartPart).filter(
+        MultipartPart.upload==upload).count()
+    return {'upload': upload_dict}
+
+
 def initiate_multipart(context, data_dict):
     h.check_access('cloudstorage_initiate_multipart', data_dict)
     id, name, size = toolkit.get_or_bust(data_dict, ['id', 'name', 'size'])
@@ -77,7 +91,8 @@ def initiate_multipart(context, data_dict):
 
         upload_id = resp.object.find(
             '{%s}UploadId' % resp.object.nsmap[None]).text
-        upload_object = MultipartUpload(upload_id, id, res_name)
+        upload_object = MultipartUpload(upload_id, id, res_name, size, name)
+
         upload_object.save()
     return upload_object.as_dict()
 
@@ -117,7 +132,7 @@ def finish_multipart(context, data_dict):
     chunks = [
         (part.n, part.etag)
         for part in model.Session.query(MultipartPart).filter_by(
-            upload_id=upload_id)
+            upload_id=upload_id).order_by(MultipartPart.n)
     ]
     uploader = ResourceCloudStorage({})
     try:
@@ -143,7 +158,7 @@ def abort_multipart(context, data_dict):
 
     aborted = []
     for upload in resource_uploads:
-        resp = _delete_multipart(upload, uploader)
+        _delete_multipart(upload, uploader)
 
         aborted.append(upload.id)
 
