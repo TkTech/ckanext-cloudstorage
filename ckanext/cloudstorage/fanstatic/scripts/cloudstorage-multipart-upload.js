@@ -368,6 +368,8 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
                             '/resource/' +
                             self._resourceId);
                         self._form.attr('action', redirect_url);
+                        self._form.attr('method', 'GET');
+                        self.$('[name]').attr('name', null);
 
                         self._form.submit();
                     }
