@@ -85,6 +85,12 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
                     self._uploadedParts = upload.parts;
                     self._uploadName = upload.original_name;
                     self._partNumber = self._uploadedParts + 1;
+
+
+                    var current_chunk_size = self._file.fileupload('option', 'maxChunkSize');
+                    var uploaded_bytes = current_chunk_size * upload.parts;
+                    self._file.fileupload('option', 'uploadedBytes', uploaded_bytes);
+
                     self.sandbox.notify(
                         'Incomplete upload',
                         'File: ' + upload.original_name +
@@ -174,14 +180,17 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
             this._partNumber = 1;
         },
 
+        _countChunkSize: function (size, chunk) {
+            while (size / chunk > 10000) chunk *= 2;
+            return chunk;
+        },
+
         _onFileUploadAdd: function (event, data) {
             this._setProgress(0, this._bar);
             var file = data.files[0];
             var target = $(event.target);
 
-            var chunkSize = target.fileupload('option', 'maxChunkSize');
-
-            while (file.size / chunkSize > 10000) chunkSize *= 2;
+            var chunkSize = this._countChunkSize(file.size, target.fileupload('option', 'maxChunkSize'))
 
             if (this._uploadName && this._uploadSize && this._uploadedParts !== null) {
                 if (this._uploadSize !== file.size || this._uploadName !== file.name){
@@ -199,7 +208,7 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
 
                 var loaded = chunkSize * this._uploadedParts;
 
-                target.fileupload('option', 'uploadedBytes', loaded);
+                // target.fileupload('option', 'uploadedBytes', loaded);
                 this._onFileUploadProgress(event, {
                     total: file.size,
                     loaded: loaded

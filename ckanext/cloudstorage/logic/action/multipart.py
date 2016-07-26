@@ -146,7 +146,8 @@ def finish_multipart(context, data_dict):
         chunks)
     upload.delete()
     upload.commit()
-    print chunks
+    h.flash_success('File successfully uploaded.')
+    log.debug(chunks)
 
 
 def abort_multipart(context, data_dict):
