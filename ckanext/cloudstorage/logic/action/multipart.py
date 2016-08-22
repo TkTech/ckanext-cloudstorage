@@ -146,6 +146,16 @@ def finish_multipart(context, data_dict):
         chunks)
     upload.delete()
     upload.commit()
+
+    try:
+        res_dict = toolkit.get_action('resource_show')(context.copy(), {'id': data_dict.get('id')})
+        pkg_dict = toolkit.get_action('package_show')(context.copy(), {'id': res_dict['package_id']})
+
+        if pkg_dict['state'] == 'draft':
+            toolkit.get_action('package_patch')(dict(context.copy(), allow_state_change=True), dict(id=pkg_dict['id'], state='active'))
+    except Exception as e:
+        log.error(type(e))
+        log.error(e)
     h.flash_success('File successfully uploaded.')
     log.debug(chunks)
 
