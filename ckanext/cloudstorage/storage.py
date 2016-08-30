@@ -22,12 +22,22 @@ class CloudStorage(object):
                 self.driver_name
             )
         )(**self.driver_options)
-        self.container = self.driver.get_container(
-            container_name=self.container_name
-        )
+        self._container = None
 
     def path_from_filename(self, rid, filename):
         raise NotImplemented
+
+    @property
+    def container(self):
+        """
+        Return the currently configured libcloud container.
+        """
+        if self._container is None:
+            self._container = self.driver.get_container(
+                container_name=self.container_name
+            )
+
+        return self._container
 
     @property
     def driver_options(self):
