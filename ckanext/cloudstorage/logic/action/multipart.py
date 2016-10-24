@@ -40,6 +40,16 @@ def _save_part_info(n, etag, upload):
 
 
 def check_multipart(context, data_dict):
+    """Check whether unfinished multipart upload already exists.
+
+    :param context:
+    :param data_dict:
+        dict with required `id`
+    :returns: None or dict with `upload` - existing multipart upload info
+    :rtype: NoneType or dict
+
+    """
+
     h.check_access('cloudstorage_check_multipart', data_dict)
     id = toolkit.get_or_bust(data_dict, 'id')
     try:
@@ -49,11 +59,24 @@ def check_multipart(context, data_dict):
         return
     upload_dict = upload.as_dict()
     upload_dict['parts'] = model.Session.query(MultipartPart).filter(
-        MultipartPart.upload==upload).count()
+        MultipartPart.upload == upload).count()
     return {'upload': upload_dict}
 
 
 def initiate_multipart(context, data_dict):
+    """Initiate new Multipart Upload.
+
+    :param context:
+    :param data_dict: dict with required keys:
+        id: resource's id
+        name: filename
+        size: filesize
+
+    :returns: MultipartUpload info
+    :rtype: dict
+
+    """
+
     h.check_access('cloudstorage_initiate_multipart', data_dict)
     id, name, size = toolkit.get_or_bust(data_dict, ['id', 'name', 'size'])
 
@@ -96,8 +119,6 @@ def initiate_multipart(context, data_dict):
         upload_object.save()
     return upload_object.as_dict()
 
-    return {'UploadId': upload_id}
-
 
 def upload_multipart(context, data_dict):
     h.check_access('cloudstorage_upload_multipart', data_dict)
@@ -107,7 +128,6 @@ def upload_multipart(context, data_dict):
     uploader = ResourceCloudStorage({})
     upload = model.Session.query(MultipartUpload).get(upload_id)
 
-    # import pdb; pdb.set_trace()
     resp = uploader.driver.connection.request(
         _get_object_url(
             uploader, upload.name) + '?partNumber={0}&uploadId={1}'.format(
@@ -126,6 +146,18 @@ def upload_multipart(context, data_dict):
 
 
 def finish_multipart(context, data_dict):
+    """Called after all parts had been uploaded.
+
+    Triggers call to `_commit_multipart` which will convert separate uploaded parts into single file
+
+    :param context:
+    :param data_dict:
+        dict with required key `uploadId` - id of Multipart Upload that should be finished
+    :returns: None
+    :rtype: NoneType
+
+    """
+
     h.check_access('cloudstorage_finish_multipart', data_dict)
     upload_id = toolkit.get_or_bust(data_dict, 'uploadId')
     upload = model.Session.query(MultipartUpload).get(upload_id)
@@ -148,11 +180,16 @@ def finish_multipart(context, data_dict):
     upload.commit()
 
     try:
-        res_dict = toolkit.get_action('resource_show')(context.copy(), {'id': data_dict.get('id')})
-        pkg_dict = toolkit.get_action('package_show')(context.copy(), {'id': res_dict['package_id']})
+        res_dict = toolkit.get_action('resource_show')(
+            context.copy(), {'id': data_dict.get('id')})
+        pkg_dict = toolkit.get_action('package_show')(
+            context.copy(), {'id': res_dict['package_id']})
 
         if pkg_dict['state'] == 'draft':
-            toolkit.get_action('package_patch')(dict(context.copy(), allow_state_change=True), dict(id=pkg_dict['id'], state='active'))
+            toolkit.get_action('package_patch')(
+                dict(context.copy(), allow_state_change=True),
+                dict(id=pkg_dict['id'], state='active')
+            )
     except Exception as e:
         log.error(type(e))
         log.error(e)
