@@ -111,9 +111,15 @@ def initiate_multipart(context, data_dict):
         )
         if not resp.success():
             raise toolkit.ValidationError(resp.error)
-
-        upload_id = resp.object.find(
-            '{%s}UploadId' % resp.object.nsmap[None]).text
+        try:
+            upload_id = resp.object.find(
+                '{%s}UploadId' % resp.object.nsmap[None]).text
+        except AttributeError:
+            upload_id_list = filter(
+                lambda e: e.tag.endswith('UploadId'),
+                resp.object.getchildren()
+            )
+            upload_id = upload_id_list[0].text
         upload_object = MultipartUpload(upload_id, id, res_name, size, name)
 
         upload_object.save()
