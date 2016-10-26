@@ -79,6 +79,9 @@ def initiate_multipart(context, data_dict):
 
     h.check_access('cloudstorage_initiate_multipart', data_dict)
     id, name, size = toolkit.get_or_bust(data_dict, ['id', 'name', 'size'])
+    user_id = None
+    if context['auth_user_obj']:
+        user_id = context['auth_user_obj'].id
 
     uploader = ResourceCloudStorage({'multipart_name': name})
     res_name = uploader.path_from_filename(id, name)
@@ -120,7 +123,7 @@ def initiate_multipart(context, data_dict):
                 resp.object.getchildren()
             )
             upload_id = upload_id_list[0].text
-        upload_object = MultipartUpload(upload_id, id, res_name, size, name)
+        upload_object = MultipartUpload(upload_id, id, res_name, size, name, user_id)
 
         upload_object.save()
     return upload_object.as_dict()
@@ -176,7 +179,7 @@ def finish_multipart(context, data_dict):
     try:
         obj = uploader.container.get_object(upload.name)
         obj.delete()
-    except:
+    except Exception:
         pass
     uploader.driver._commit_multipart(
         _get_object_url(uploader, upload.name),
@@ -197,10 +200,8 @@ def finish_multipart(context, data_dict):
                 dict(id=pkg_dict['id'], state='active')
             )
     except Exception as e:
-        log.error(type(e))
         log.error(e)
-    h.flash_success('File successfully uploaded.')
-    log.debug(chunks)
+    return {'commited': True}
 
 
 def abort_multipart(context, data_dict):

@@ -53,9 +53,9 @@ benefits of your CDN/blob storage.
     ckanext.cloudstorage.use_secure_urls = 1
 
 This option also enables multipart uploads, but you need to create database tables
-firs. Run next command from extension folder:
+first. Run next command from extension folder:
     `paster cloudstorage initdb -c /etc/ckan/default/production.ini `
-    
+
 # Migrating From FileStorage
 
 If you already have resources that have been uploaded and saved using CKAN's

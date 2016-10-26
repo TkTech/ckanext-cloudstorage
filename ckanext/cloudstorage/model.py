@@ -48,12 +48,13 @@ class MultipartPart(Base, DomainObject):
 class MultipartUpload(Base, DomainObject):
     __tablename__ = 'cloudstorage_multipart_upload'
 
-    def __init__(self, id, resource_id, name, size, original_name):
+    def __init__(self, id, resource_id, name, size, original_name, user_id):
         self.id = id
         self.resource_id = resource_id
         self.name = name
         self.size = size
         self.original_name = original_name
+        self.user_id = user_id
 
     @classmethod
     def resource_uploads(cls, resource_id):
@@ -68,3 +69,4 @@ class MultipartUpload(Base, DomainObject):
     initiated = Column(DateTime, default=datetime.utcnow)
     size = Column(Numeric)
     original_name = Column(UnicodeText)
+    user_id = Column(UnicodeText)

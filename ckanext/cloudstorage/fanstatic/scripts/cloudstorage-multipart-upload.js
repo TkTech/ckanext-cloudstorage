@@ -8,7 +8,8 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
                 resource_create: _('Resource has been created.'),
                 resource_update: _('Resource has been updated.'),
                 undefined_upload_id: _('Undefined uploadId.'),
-                upload_completed: _('Upload completed.'),
+                upload_completed: _('Upload completed. You will be redirected in few seconds...'),
+                unable_to_finish: _('Unable to finish multipart upload'),
             }
         },
 
@@ -358,15 +359,16 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
                     'id': this._resourceId
                 },
                 function (data) {
-                    self.sandbox.notify(
-                        'Success',
-                        self.i18n('upload_completed'),
-                        'success'
-                    );
+
                     self._progress.hide('fast');
                     self._onDisableSave(false);
 
                     if (self._resourceId && self._packageId){
+                        self.sandbox.notify(
+                            'Success',
+                            self.i18n('upload_completed'),
+                            'success'
+                        );
                         // self._form.remove();
                         var redirect_url = self.sandbox.url(
                             '/dataset/' +
@@ -376,13 +378,15 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
                         self._form.attr('action', redirect_url);
                         self._form.attr('method', 'GET');
                         self.$('[name]').attr('name', null);
+                        setTimeout(function(){
+                            self._form.submit();
+                        }, 3000);
 
-                        self._form.submit();
                     }
                 },
                 function (err) {
                     console.log(err);
-                    self._onHandleError('Unable to finish multipart upload');
+                    self._onHandleError(self.i18n('unable_to_finish'));
                 }
             );
             this._setProgressType('success', this._progress);
