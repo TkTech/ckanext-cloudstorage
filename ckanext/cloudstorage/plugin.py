@@ -88,6 +88,7 @@ class CloudStoragePlugin(plugins.SingletonPlugin):
             'cloudstorage_finish_multipart': m_action.finish_multipart,
             'cloudstorage_abort_multipart': m_action.abort_multipart,
             'cloudstorage_check_multipart': m_action.check_multipart,
+            'cloudstorage_clean_multipart': m_action.clean_multipart,
         }
 
     # IAuthFunctions
@@ -99,6 +100,7 @@ class CloudStoragePlugin(plugins.SingletonPlugin):
             'cloudstorage_finish_multipart': m_auth.finish_multipart,
             'cloudstorage_abort_multipart': m_auth.abort_multipart,
             'cloudstorage_check_multipart': m_auth.check_multipart,
+            'cloudstorage_clean_multipart': m_auth.clean_multipart,
         }
 
     # IResourceController

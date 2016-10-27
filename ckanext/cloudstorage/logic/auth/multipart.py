@@ -19,3 +19,7 @@ def abort_multipart(context, data_dict):
 
 def check_multipart(context, data_dict):
     return {'success': check_access('resource_create', context, data_dict)}
+
+
+def clean_multipart(context, data_dict):
+    return {'success': False}

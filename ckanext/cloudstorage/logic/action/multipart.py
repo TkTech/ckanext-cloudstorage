@@ -4,9 +4,16 @@ import ckan.plugins.toolkit as toolkit
 from ckanext.cloudstorage.storage import ResourceCloudStorage
 from ckanext.cloudstorage.model import MultipartUpload, MultipartPart
 from sqlalchemy.orm.exc import NoResultFound
+from pylons import config
+import datetime
 import logging
 
 log = logging.getLogger(__name__)
+
+
+def _get_max_multipart_lifetime():
+    value = float(config.get('ckanext.cloudstorage.max_multipart_lifetime', 7))
+    return datetime.timedelta(value)
 
 
 def _get_object_url(uploader, name):
@@ -220,3 +227,43 @@ def abort_multipart(context, data_dict):
     model.Session.commit()
 
     return aborted
+
+
+def clean_multipart(context, data_dict):
+    """Clean old multipart uploads.
+
+    :param context:
+    :param data_dict:
+    :returns: dict with:
+        removed - amount of removed uploads.
+        total - total amount of expired uploads.
+        errors - list of errors raised during deletion. Appears when
+        `total` and `removed` are different.
+    :rtype: dict
+
+    """
+
+    h.check_access('cloudstorage_clean_multipart', data_dict)
+    uploader = ResourceCloudStorage({})
+    delta = _get_max_multipart_lifetime()
+    oldest_allowed = datetime.datetime.utcnow() - delta
+
+    uploads_to_remove = model.Session.query(MultipartUpload).filter(
+        MultipartUpload.initiated < oldest_allowed
+    )
+
+    result = {
+        'removed': 0,
+        'total': uploads_to_remove.count(),
+        'errors': []
+    }
+
+    for upload in uploads_to_remove:
+        try:
+            _delete_multipart(upload, uploader)
+        except toolkit.ValidationError as e:
+            result['errors'].append(e.error_summary)
+        else:
+            result['removed'] += 1
+
+    return result
