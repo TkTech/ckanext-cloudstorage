@@ -9,7 +9,7 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
                 resource_update: _('Resource has been updated.'),
                 undefined_upload_id: _('Undefined uploadId.'),
                 upload_completed: _('Upload completed. You will be redirected in few seconds...'),
-                unable_to_finish: _('Unable to finish multipart upload'),
+                unable_to_finish: _('Unable to finish multipart upload')
             }
         },
 
@@ -54,7 +54,7 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
                 progressall: this._onFileUploadProgress,
                 done: this._onFinishUpload,
                 fail: this._onUploadFail,
-                always: this._onAnyEndedUpload,
+                always: this._onAnyEndedUpload
             });
 
             this._save.on('click', this._onSaveClick);
@@ -265,6 +265,7 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
             formData.multipart_name = file.name;
             formData.url = file.name;
             formData.package_id = this.options.packageId;
+            formData.size = file.size;
             var action = formData.id ? 'resource_update' : 'resource_create';
             var url = this._form.attr('action') || window.location.href;
             this.sandbox.client.call(
