@@ -4,15 +4,36 @@ from ckan import plugins
 from routes.mapper import SubMapper
 import os.path
 from ckanext.cloudstorage import storage
+from ckanext.cloudstorage import helpers
+import ckanext.cloudstorage.logic.action.multipart as m_action
+import ckanext.cloudstorage.logic.auth.multipart as m_auth
 
 
 class CloudStoragePlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IUploader)
     plugins.implements(plugins.IRoutes, inherit=True)
     plugins.implements(plugins.IConfigurable)
+    plugins.implements(plugins.IConfigurer)
+    plugins.implements(plugins.IActions)
+    plugins.implements(plugins.ITemplateHelpers)
+    plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.IResourceController, inherit=True)
 
+    # IConfigurer
+
+    def update_config(self, config):
+        plugins.toolkit.add_template_directory(config, 'templates')
+        plugins.toolkit.add_resource('fanstatic/scripts', 'cloudstorage-js')
+
+    # ITemplateHelpers
+
+    def get_helpers(self):
+        return dict(
+            cloudstorage_use_secure_urls=helpers.use_secure_urls
+        )
+
     def configure(self, config):
+
         required_keys = (
             'ckanext.cloudstorage.driver',
             'ckanext.cloudstorage.driver_options',
@@ -57,6 +78,30 @@ class CloudStoragePlugin(plugins.SingletonPlugin):
             )
 
         return map
+
+    # IActions
+
+    def get_actions(self):
+        return {
+            'cloudstorage_initiate_multipart': m_action.initiate_multipart,
+            'cloudstorage_upload_multipart': m_action.upload_multipart,
+            'cloudstorage_finish_multipart': m_action.finish_multipart,
+            'cloudstorage_abort_multipart': m_action.abort_multipart,
+            'cloudstorage_check_multipart': m_action.check_multipart,
+            'cloudstorage_clean_multipart': m_action.clean_multipart,
+        }
+
+    # IAuthFunctions
+
+    def get_auth_functions(self):
+        return {
+            'cloudstorage_initiate_multipart': m_auth.initiate_multipart,
+            'cloudstorage_upload_multipart': m_auth.upload_multipart,
+            'cloudstorage_finish_multipart': m_auth.finish_multipart,
+            'cloudstorage_abort_multipart': m_auth.abort_multipart,
+            'cloudstorage_check_multipart': m_auth.check_multipart,
+            'cloudstorage_clean_multipart': m_auth.clean_multipart,
+        }
 
     # IResourceController
 

@@ -12,6 +12,10 @@ from ckanext.cloudstorage.storage import (
     CloudStorage,
     ResourceCloudStorage
 )
+from ckanext.cloudstorage.model import (
+    create_tables,
+    drop_tables
+)
 
 
 USAGE = """ckanext-cloudstorage
@@ -19,10 +23,12 @@ USAGE = """ckanext-cloudstorage
 Commands:
     - fix-cors       Update CORS rules where possible.
     - migrate        Upload local storage to the remote.
+    - initdb         Reinitalize database tables.
 
 Usage:
     cloudstorage fix-cors <domains>... [--c=<config>]
     cloudstorage migrate <path_to_storage> [--c=<config>]
+    cloudstorage initdb [--c=<config>]
 
 Options:
     -c=<config>       The CKAN configuration file.
@@ -47,6 +53,8 @@ class PasterCommand(CkanCommand):
             _fix_cors(args)
         elif args['migrate']:
             _migrate(args)
+        elif args['initdb']:
+            _initdb()
 
 
 def _migrate(args):
@@ -134,3 +142,9 @@ def _fix_cors(args):
                 driver_name=cs.driver_name
             )
         )
+
+
+def _initdb():
+    drop_tables()
+    create_tables()
+    print("DB tables are reinitialized")

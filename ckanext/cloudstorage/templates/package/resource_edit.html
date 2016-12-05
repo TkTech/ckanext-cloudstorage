@@ -1,0 +1,8 @@
+{% ckan_extends %}
+
+
+{% block form %}
+
+    {% snippet 'cloudstorage/snippets/multipart_module.html', pkg_name=pkg.name, parent=super %}
+
+{% endblock %}

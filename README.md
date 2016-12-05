@@ -52,6 +52,16 @@ benefits of your CDN/blob storage.
 
     ckanext.cloudstorage.use_secure_urls = 1
 
+This option also enables multipart uploads, but you need to create database tables
+first. Run next command from extension folder:
+    `paster cloudstorage initdb -c /etc/ckan/default/production.ini `
+
+With that feature you can use `cloudstorage_clean_multipart` action, which is available
+only for sysadmins. After executing, all unfinished multipart uploads, older than 7 days,
+will be aborted. You can configure this lifetime, example:
+
+     ckanext.cloudstorage.max_multipart_lifetime  = 7
+
 # Migrating From FileStorage
 
 If you already have resources that have been uploaded and saved using CKAN's
