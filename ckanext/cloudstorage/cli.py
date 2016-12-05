@@ -12,7 +12,10 @@ from ckanext.cloudstorage.storage import (
     CloudStorage,
     ResourceCloudStorage
 )
-from . import model
+from ckanext.cloudstorage.model import (
+    create_tables,
+    drop_tables
+)
 
 
 USAGE = """ckanext-cloudstorage
@@ -142,6 +145,6 @@ def _fix_cors(args):
 
 
 def _initdb():
-    model.drop_tables()
-    model.create_tables()
+    drop_tables()
+    create_tables()
     print("DB tables are reinitialized")

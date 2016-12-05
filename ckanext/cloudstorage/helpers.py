@@ -1,5 +1,7 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 from ckanext.cloudstorage.storage import ResourceCloudStorage
-import boto
+
 
 def use_secure_urls():
     return all([

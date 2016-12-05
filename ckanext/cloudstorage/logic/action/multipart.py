@@ -1,12 +1,16 @@
-import ckan.lib.helpers as h
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+import logging
+import datetime
+
+from pylons import config
+from sqlalchemy.orm.exc import NoResultFound
 import ckan.model as model
+import ckan.lib.helpers as h
 import ckan.plugins.toolkit as toolkit
+
 from ckanext.cloudstorage.storage import ResourceCloudStorage
 from ckanext.cloudstorage.model import MultipartUpload, MultipartPart
-from sqlalchemy.orm.exc import NoResultFound
-from pylons import config
-import datetime
-import logging
 
 log = logging.getLogger(__name__)
 
@@ -50,8 +54,7 @@ def check_multipart(context, data_dict):
     """Check whether unfinished multipart upload already exists.
 
     :param context:
-    :param data_dict:
-        dict with required `id`
+    :param data_dict: dict with required `id`
     :returns: None or dict with `upload` - existing multipart upload info
     :rtype: NoneType or dict
 
@@ -113,7 +116,7 @@ def initiate_multipart(context, data_dict):
                         log.info('Removing cloud object: %s' % cloud_object)
                         cloud_object.delete()
             except Exception as e:
-                log.error('[delete from cloud] %s' % e)
+                log.exception('[delete from cloud] %s' % e)
 
         resp = uploader.driver.connection.request(
             _get_object_url(uploader, res_name) + '?uploads',
@@ -164,11 +167,11 @@ def upload_multipart(context, data_dict):
 def finish_multipart(context, data_dict):
     """Called after all parts had been uploaded.
 
-    Triggers call to `_commit_multipart` which will convert separate uploaded parts into single file
+    Triggers call to `_commit_multipart` which will convert separate uploaded
+    parts into single file
 
     :param context:
-    :param data_dict:
-        dict with required key `uploadId` - id of Multipart Upload that should be finished
+    :param data_dict: dict with required key `uploadId` - id of Multipart Upload that should be finished
     :returns: None
     :rtype: NoneType
 

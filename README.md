@@ -58,9 +58,9 @@ first. Run next command from extension folder:
 
 With that feature you can use `cloudstorage_clean_multipart` action, which is available
 only for sysadmins. After executing, all unfinished multipart uploads, older than 7 days,
-will be aborted. You can configure this lifetime
+will be aborted. You can configure this lifetime, example:
 
-     ckanext.cloudstorage.max_multipart_lifetime = {number of days(default: 7)}
+     ckanext.cloudstorage.max_multipart_lifetime  = 7
 
 # Migrating From FileStorage
 
