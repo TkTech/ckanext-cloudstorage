@@ -10,7 +10,7 @@ from pylons import config
 from ckan import model
 from ckan.lib import munge
 
-from libcloud.storage.types import Provider
+from libcloud.storage.types import Provider, ObjectDoesNotExistError
 from libcloud.storage.providers import get_driver
 
 
@@ -202,14 +202,20 @@ class ResourceCloudStorage(CloudStorage):
         elif self._clear and self.old_filename and not self.leave_files:
             # This is only set when a previously-uploaded file is replace
             # by a link. We want to delete the previously-uploaded file.
-            self.container.delete_object(
-                self.container.get_object(
-                    self.path_from_filename(
-                        id,
-                        self.old_filename
+            try:
+                self.container.delete_object(
+                    self.container.get_object(
+                        self.path_from_filename(
+                            id,
+                            self.old_filename
+                        )
                     )
                 )
-            )
+            except ObjectDoesNotExistError:
+                # It's possible for the object to have already been deleted, or
+                # for it to not yet exist in a committed state due to an
+                # outstanding lease.
+                return
 
     def get_url_from_filename(self, rid, filename):
         """
