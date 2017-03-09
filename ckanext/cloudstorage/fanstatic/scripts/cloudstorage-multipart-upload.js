@@ -324,7 +324,7 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
                 url: this.sandbox.client.url('/api/action/cloudstorage_initiate_multipart'),
                 data: JSON.stringify({
                     id: id,
-                    name: file.name,
+                    name: encodeURIComponent(file.name),
                     size: file.size
                 })
             });
