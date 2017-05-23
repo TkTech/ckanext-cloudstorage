@@ -191,13 +191,34 @@ class ResourceCloudStorage(CloudStorage):
         :param max_size: Ignored.
         """
         if self.filename:
-            self.container.upload_object_via_stream(
-                self.file_upload,
-                object_name=self.path_from_filename(
-                    id,
-                    self.filename
+            if self.can_use_advanced_azure:
+                from azure.storage import blob as azure_blob
+
+                blob_service = azure_blob.BlockBlobService(
+                    self.driver_options['key'],
+                    self.driver_options['secret']
                 )
-            )
+
+                return blob_service.create_blob_from_stream(
+                    container_name=self.container_name,
+                    blob_name=self.path_from_filename(
+                        id,
+                        self.filename
+                        ),
+                    stream=self.file_upload
+                    content_settings=ContentSettings(
+                        content_type='text/csv' if self.filename[-3:]=='csv' else
+                        'application/octet-stream'
+                        )
+                )
+            else:
+                self.container.upload_object_via_stream(
+                    self.file_upload,
+                    object_name=self.path_from_filename(
+                        id,
+                        self.filename
+                    )
+                )
 
         elif self._clear and self.old_filename and not self.leave_files:
             # This is only set when a previously-uploaded file is replace
