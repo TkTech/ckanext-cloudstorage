@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import cgi
+import mimetypes
 import os.path
 import urlparse
 from ast import literal_eval
@@ -125,6 +126,14 @@ class CloudStorage(object):
 
         return False
 
+    @property
+    def guess_mimetype(self):
+        """
+        `True` if ckanext-cloudstroage is configured to guess mime types,
+        `False` otherwise.
+        """
+        return bool(int(config.get('ckanext.cloudstorage.guess_mimetype', 0)))
+
 
 class ResourceCloudStorage(CloudStorage):
     def __init__(self, resource):
@@ -198,18 +207,20 @@ class ResourceCloudStorage(CloudStorage):
                     self.driver_options['key'],
                     self.driver_options['secret']
                 )
+                content_settings = None
+                if self.guess_mimetype:
+                    content_type, _ = mimetypes.guess_type(self.filename)
+                    if content_type:
+                        content_settings = ContentSettings(content_type=content_type)
 
                 return blob_service.create_blob_from_stream(
                     container_name=self.container_name,
                     blob_name=self.path_from_filename(
                         id,
                         self.filename
-                        ),
-                    stream=self.file_upload
-                    content_settings=ContentSettings(
-                        content_type='text/csv' if self.filename[-3:]=='csv' else
-                        'application/octet-stream'
-                        )
+                    ),
+                    stream=self.file_upload,
+                    content_settings=content_settings
                 )
             else:
                 self.container.upload_object_via_stream(
