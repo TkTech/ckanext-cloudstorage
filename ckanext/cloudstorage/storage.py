@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from pylons import config
 from ckan import model
 from ckan.lib import munge
+import ckan.plugins as p
 
 from libcloud.storage.types import Provider, ObjectDoesNotExistError
 from libcloud.storage.providers import get_driver
@@ -76,7 +77,7 @@ class CloudStorage(object):
         `True` if ckanext-cloudstroage is configured to generate secure
         one-time URLs to resources, `False` otherwise.
         """
-        return bool(int(config.get('ckanext.cloudstorage.use_secure_urls', 0)))
+        return p.toolkit.asbool(config.get('ckanext.cloudstorage.use_secure_urls', False))
 
     @property
     def leave_files(self):
@@ -85,7 +86,7 @@ class CloudStorage(object):
         provider instead of removing them when a resource/package is deleted,
         otherwise `False`.
         """
-        return bool(int(config.get('ckanext.cloudstorage.leave_files', 0)))
+        return p.toolkit.asbool(config.get('ckanext.cloudstorage.leave_files', False))
 
     @property
     def can_use_advanced_azure(self):
@@ -129,10 +130,10 @@ class CloudStorage(object):
     @property
     def guess_mimetype(self):
         """
-        `True` if ckanext-cloudstroage is configured to guess mime types,
+        `True` if ckanext-cloudstorage is configured to guess mime types,
         `False` otherwise.
         """
-        return bool(int(config.get('ckanext.cloudstorage.guess_mimetype', 0)))
+        return p.toolkit.asbool(config.get('ckanext.cloudstorage.guess_mimetype', False))
 
 
 class ResourceCloudStorage(CloudStorage):
