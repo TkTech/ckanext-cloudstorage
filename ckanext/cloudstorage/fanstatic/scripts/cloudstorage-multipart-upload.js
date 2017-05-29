@@ -21,7 +21,8 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
         _uploadSize: null,
         _uploadName: null,
         _uploadedParts: null,
-        _btnClick: null,
+        _clickedBtn: null,
+        _redirect_url: null;
 
         initialize: function() {
             $.proxyAll(this, /_on/);
@@ -96,7 +97,6 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
                         'File: ' + upload.original_name +
                              '; Size: ' + self._uploadSize,
                         'warning');
-
                     self._onEnableResumeBtn(operation);
                 },
                 function (error) {
@@ -243,15 +243,13 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
             }
             event.preventDefault();
             var dataset_id = this.options.packageId;
-            this._btnClick = $(event.target).attr('value');
-            if (this._btnClick == 'go-dataset') {
+            this._clickedBtn = $(event.target).attr('value');
+            if (this._clickedBtn == 'go-dataset') {
                 this._onDisableSave(false);
-                var redirect_url = this.sandbox.url(
+                this._redirect_url = this.sandbox.url(
                     '/dataset/edit/' +
                     dataset_id);
-                window.setTimeout(function(){
-                    window.location = redirect_url;
-                }, 1000);
+                window.location = this._redirect_url;
             } else {
                 try{
                     this._onDisableSave(true);
@@ -368,9 +366,6 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
                 'uploadId': this._uploadId,
                 'id': this._resourceId,
             }
-            if (self._btnClick == 'go-metadata') {
-                data_dict.finish = true
-            }
             this.sandbox.client.call(
                 'POST',
                 'cloudstorage_finish_multipart',
@@ -387,18 +382,18 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
                             'success'
                         );
                         // self._form.remove();
-                        if (self._btnClick == 'again') {
-                            var redirect_url = self.sandbox.url(
+                        if (self._clickedBtn == 'again') {
+                            this._redirect_url = self.sandbox.url(
                                 '/dataset/new_resource/' +
                                 self._packageId
                             );
                         } else {
-                            var redirect_url = self.sandbox.url(
+                            this._redirect_url = self.sandbox.url(
                                 '/dataset/' +
                                 self._packageId
                             );
                         }
-                        self._form.attr('action', redirect_url);
+                        self._form.attr('action', this._redirect_url);
                         self._form.attr('method', 'GET');
                         self.$('[name]').attr('name', null);
                         setTimeout(function(){
