@@ -77,7 +77,9 @@ class CloudStorage(object):
         `True` if ckanext-cloudstroage is configured to generate secure
         one-time URLs to resources, `False` otherwise.
         """
-        return p.toolkit.asbool(config.get('ckanext.cloudstorage.use_secure_urls', False))
+        return p.toolkit.asbool(
+            config.get('ckanext.cloudstorage.use_secure_urls', False)
+        )
 
     @property
     def leave_files(self):
@@ -86,7 +88,9 @@ class CloudStorage(object):
         provider instead of removing them when a resource/package is deleted,
         otherwise `False`.
         """
-        return p.toolkit.asbool(config.get('ckanext.cloudstorage.leave_files', False))
+        return p.toolkit.asbool(
+            config.get('ckanext.cloudstorage.leave_files', False)
+        )
 
     @property
     def can_use_advanced_azure(self):
@@ -133,7 +137,9 @@ class CloudStorage(object):
         `True` if ckanext-cloudstorage is configured to guess mime types,
         `False` otherwise.
         """
-        return p.toolkit.asbool(config.get('ckanext.cloudstorage.guess_mimetype', False))
+        return p.toolkit.asbool(
+            config.get('ckanext.cloudstorage.guess_mimetype', False)
+        )
 
 
 class ResourceCloudStorage(CloudStorage):
@@ -212,7 +218,9 @@ class ResourceCloudStorage(CloudStorage):
                 if self.guess_mimetype:
                     content_type, _ = mimetypes.guess_type(self.filename)
                     if content_type:
-                        content_settings = ContentSettings(content_type=content_type)
+                        content_settings = ContentSettings(
+                            content_type=content_type
+                        )
 
                 return blob_service.create_blob_from_stream(
                     container_name=self.container_name,
