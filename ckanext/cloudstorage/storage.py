@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import cgi
+import mimetypes
 import os.path
 import urlparse
 from ast import literal_eval
@@ -9,6 +10,7 @@ from datetime import datetime, timedelta
 from pylons import config
 from ckan import model
 from ckan.lib import munge
+import ckan.plugins as p
 
 from libcloud.storage.types import Provider, ObjectDoesNotExistError
 from libcloud.storage.providers import get_driver
@@ -75,7 +77,7 @@ class CloudStorage(object):
         `True` if ckanext-cloudstroage is configured to generate secure
         one-time URLs to resources, `False` otherwise.
         """
-        return bool(int(config.get('ckanext.cloudstorage.use_secure_urls', 0)))
+        return p.toolkit.asbool(config.get('ckanext.cloudstorage.use_secure_urls', False))
 
     @property
     def leave_files(self):
@@ -84,7 +86,7 @@ class CloudStorage(object):
         provider instead of removing them when a resource/package is deleted,
         otherwise `False`.
         """
-        return bool(int(config.get('ckanext.cloudstorage.leave_files', 0)))
+        return p.toolkit.asbool(config.get('ckanext.cloudstorage.leave_files', False))
 
     @property
     def can_use_advanced_azure(self):
@@ -124,6 +126,14 @@ class CloudStorage(object):
                 pass
 
         return False
+
+    @property
+    def guess_mimetype(self):
+        """
+        `True` if ckanext-cloudstorage is configured to guess mime types,
+        `False` otherwise.
+        """
+        return p.toolkit.asbool(config.get('ckanext.cloudstorage.guess_mimetype', False))
 
 
 class ResourceCloudStorage(CloudStorage):
@@ -191,13 +201,36 @@ class ResourceCloudStorage(CloudStorage):
         :param max_size: Ignored.
         """
         if self.filename:
-            self.container.upload_object_via_stream(
-                self.file_upload,
-                object_name=self.path_from_filename(
-                    id,
-                    self.filename
+            if self.can_use_advanced_azure:
+                from azure.storage import blob as azure_blob
+
+                blob_service = azure_blob.BlockBlobService(
+                    self.driver_options['key'],
+                    self.driver_options['secret']
                 )
-            )
+                content_settings = None
+                if self.guess_mimetype:
+                    content_type, _ = mimetypes.guess_type(self.filename)
+                    if content_type:
+                        content_settings = ContentSettings(content_type=content_type)
+
+                return blob_service.create_blob_from_stream(
+                    container_name=self.container_name,
+                    blob_name=self.path_from_filename(
+                        id,
+                        self.filename
+                    ),
+                    stream=self.file_upload,
+                    content_settings=content_settings
+                )
+            else:
+                self.container.upload_object_via_stream(
+                    self.file_upload,
+                    object_name=self.path_from_filename(
+                        id,
+                        self.filename
+                    )
+                )
 
         elif self._clear and self.old_filename and not self.leave_files:
             # This is only set when a previously-uploaded file is replace
