@@ -7,6 +7,7 @@ from pylons.i18n import _
 
 from ckan import logic, model
 from ckan.lib import base, uploader
+import ckan.lib.helpers as h
 
 
 class StorageController(base.BaseController):
@@ -36,7 +37,7 @@ class StorageController(base.BaseController):
             url = resource.get('url')
             if not url:
                 base.abort(404, _('No download is available'))
-            base.redirect(url)
+            h.redirect_to(url)
 
         if filename is None:
             # No filename was provided so we'll try to get one from the url.
@@ -50,4 +51,4 @@ class StorageController(base.BaseController):
         if uploaded_url is None:
             base.abort(404, _('No download is available'))
 
-        base.redirect(uploaded_url)
+        h.redirect_to(uploaded_url)
