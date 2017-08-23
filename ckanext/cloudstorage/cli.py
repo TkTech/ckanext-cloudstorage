@@ -3,6 +3,7 @@
 import os
 import os.path
 import cgi
+import tempfile
 
 from docopt import docopt
 from ckan.lib.cli import CkanCommand
@@ -27,7 +28,7 @@ Commands:
 
 Usage:
     cloudstorage fix-cors <domains>... [--c=<config>]
-    cloudstorage migrate <path_to_storage> [--c=<config>]
+    cloudstorage migrate <path_to_storage> [<resource_id>] [--c=<config>]
     cloudstorage initdb [--c=<config>]
 
 Options:
@@ -59,12 +60,14 @@ class PasterCommand(CkanCommand):
 
 def _migrate(args):
     path = args['<path_to_storage>']
+    single_id = args['<resource_id>']
     if not os.path.isdir(path):
         print('The storage directory cannot be found.')
         return
 
     lc = LocalCKAN()
     resources = {}
+    failed = []
 
     # The resource folder is stuctured like so on disk:
     # - storage/
@@ -86,7 +89,11 @@ def _migrate(args):
         resource_id = split_root[-2] + split_root[-1]
 
         for file_ in files:
-            resources[resource_id + file_] = os.path.join(
+            ckan_res_id = resource_id + file_
+            if single_id and ckan_res_id != single_id:
+                continue
+
+            resources[ckan_res_id] = os.path.join(
                 root,
                 file_
             )
@@ -117,7 +124,13 @@ def _migrate(args):
                 uploader = ResourceCloudStorage(resource)
                 uploader.upload(resource['id'])
             except Exception as e:
+                failed.append(resource_id)
                 print('\tError of type {0} during upload: {1}'.format(type(e), e))
+
+    if failed:
+        log_file = tempfile.NamedTemporaryFile(delete=False)
+        log_file.file.writelines(failed)
+        print('ID of all failed uploads are saved to `{0}`'.format(log_file.name))
 
 
 def _fix_cors(args):
