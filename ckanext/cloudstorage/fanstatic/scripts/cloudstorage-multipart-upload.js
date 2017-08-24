@@ -22,7 +22,7 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
         _uploadName: null,
         _uploadedParts: null,
         _clickedBtn: null,
-        _redirect_url: null;
+        _redirect_url: null,
 
         initialize: function() {
             $.proxyAll(this, /_on/);
@@ -365,6 +365,7 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
             var data_dict = {
                 'uploadId': this._uploadId,
                 'id': this._resourceId,
+                'save_action': this._clickedBtn
             }
             this.sandbox.client.call(
                 'POST',
