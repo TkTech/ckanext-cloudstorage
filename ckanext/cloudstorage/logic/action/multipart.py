@@ -179,6 +179,7 @@ def finish_multipart(context, data_dict):
 
     h.check_access('cloudstorage_finish_multipart', data_dict)
     upload_id = toolkit.get_or_bust(data_dict, 'uploadId')
+    finish = data_dict.get('finish', False)
     upload = model.Session.query(MultipartUpload).get(upload_id)
     chunks = [
         (part.n, part.etag)
@@ -198,19 +199,19 @@ def finish_multipart(context, data_dict):
     upload.delete()
     upload.commit()
 
-    try:
-        res_dict = toolkit.get_action('resource_show')(
-            context.copy(), {'id': data_dict.get('id')})
-        pkg_dict = toolkit.get_action('package_show')(
-            context.copy(), {'id': res_dict['package_id']})
-
-        if pkg_dict['state'] == 'draft':
-            toolkit.get_action('package_patch')(
-                dict(context.copy(), allow_state_change=True),
-                dict(id=pkg_dict['id'], state='active')
-            )
-    except Exception as e:
-        log.error(e)
+    if finish:
+        try:
+            res_dict = toolkit.get_action('resource_show')(
+                context.copy(), {'id': data_dict.get('id')})
+            pkg_dict = toolkit.get_action('package_show')(
+                context.copy(), {'id': res_dict['package_id']})
+            if pkg_dict['state'] == 'draft':
+                toolkit.get_action('package_patch')(
+                    dict(context.copy(), allow_state_change=True),
+                    dict(id=pkg_dict['id'], state='active')
+                )
+        except Exception as e:
+            log.error(e)
     return {'commited': True}
 
 

@@ -136,7 +136,13 @@ class CloudStoragePlugin(plugins.SingletonPlugin):
 
         # and all other files linked to this resource
         if not uploader.leave_files:
-            upload_path = os.path.dirname(uploader.path_from_filename(resource['id'], 'fake-name'))
+            upload_path = os.path.dirname(
+                uploader.path_from_filename(
+                    resource['id'],
+                    'fake-name'
+                )
+            )
+
             for old_file in uploader.container.iterate_objects():
                 if old_file.name.startswith(upload_path):
                     old_file.delete()

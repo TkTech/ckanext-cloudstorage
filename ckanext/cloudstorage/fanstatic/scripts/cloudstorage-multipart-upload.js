@@ -21,6 +21,8 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
         _uploadSize: null,
         _uploadName: null,
         _uploadedParts: null,
+        _clickedBtn: null,
+        _redirect_url: null;
 
         initialize: function() {
             $.proxyAll(this, /_on/);
@@ -95,7 +97,6 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
                         'File: ' + upload.original_name +
                              '; Size: ' + self._uploadSize,
                         'warning');
-
                     self._onEnableResumeBtn(operation);
                 },
                 function (error) {
@@ -241,13 +242,22 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
                 return;
             }
             event.preventDefault();
-
-            try{
-                this._onDisableSave(true);
-                this._onSaveForm();
-            } catch(error){
-                console.log(error);
+            var dataset_id = this.options.packageId;
+            this._clickedBtn = $(event.target).attr('value');
+            if (this._clickedBtn == 'go-dataset') {
                 this._onDisableSave(false);
+                this._redirect_url = this.sandbox.url(
+                    '/dataset/edit/' +
+                    dataset_id);
+                window.location = this._redirect_url;
+            } else {
+                try{
+                    this._onDisableSave(true);
+                    this._onSaveForm();
+                } catch(error){
+                    console.log(error);
+                    this._onDisableSave(false);
+                }
             }
 
             // this._form.trigger('submit', true);
@@ -352,13 +362,14 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
 
         _onFinishUpload: function() {
             var self = this;
+            var data_dict = {
+                'uploadId': this._uploadId,
+                'id': this._resourceId,
+            }
             this.sandbox.client.call(
                 'POST',
                 'cloudstorage_finish_multipart',
-                {
-                    'uploadId': this._uploadId,
-                    'id': this._resourceId
-                },
+                data_dict,
                 function (data) {
 
                     self._progress.hide('fast');
@@ -371,12 +382,18 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
                             'success'
                         );
                         // self._form.remove();
-                        var redirect_url = self.sandbox.url(
-                            '/dataset/' +
-                            self._packageId +
-                            '/resource/' +
-                            self._resourceId);
-                        self._form.attr('action', redirect_url);
+                        if (self._clickedBtn == 'again') {
+                            this._redirect_url = self.sandbox.url(
+                                '/dataset/new_resource/' +
+                                self._packageId
+                            );
+                        } else {
+                            this._redirect_url = self.sandbox.url(
+                                '/dataset/' +
+                                self._packageId
+                            );
+                        }
+                        self._form.attr('action', this._redirect_url);
                         self._form.attr('method', 'GET');
                         self.$('[name]').attr('name', null);
                         setTimeout(function(){
