@@ -16,7 +16,7 @@ from ckanext.cloudstorage.model import (
     create_tables,
     drop_tables
 )
-
+from ckan.logic import NotFound
 
 USAGE = """ckanext-cloudstorage
 
@@ -99,18 +99,25 @@ def _migrate(args):
             id=resource_id
         ))
 
-        resource = lc.action.resource_show(id=resource_id)
+        try:
+            resource = lc.action.resource_show(id=resource_id)
+        except NotFound:
+            print('\tResource not found')
+            continue
         if resource['url_type'] != 'upload':
+            print('\t`url_type` is not `upload`. Skip')
             continue
 
-        with open(os.path.join(root, file_path), 'rb') as fin:
+        with open(file_path, 'rb') as fin:
             resource['upload'] = FakeFileStorage(
                 fin,
                 resource['url'].split('/')[-1]
             )
-
-            uploader = ResourceCloudStorage(resource)
-            uploader.upload(resource['id'])
+            try:
+                uploader = ResourceCloudStorage(resource)
+                uploader.upload(resource['id'])
+            except Exception as e:
+                print('\tError of type {0} during upload: {1}'.format(type(e), e))
 
 
 def _fix_cors(args):
