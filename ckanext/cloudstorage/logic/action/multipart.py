@@ -179,7 +179,7 @@ def finish_multipart(context, data_dict):
 
     h.check_access('cloudstorage_finish_multipart', data_dict)
     upload_id = toolkit.get_or_bust(data_dict, 'uploadId')
-    finish = data_dict.get('finish', False)
+    save_action = data_dict.get('save_action', False)
     upload = model.Session.query(MultipartUpload).get(upload_id)
     chunks = [
         (part.n, part.etag)
@@ -199,7 +199,7 @@ def finish_multipart(context, data_dict):
     upload.delete()
     upload.commit()
 
-    if finish:
+    if save_action and save_action == "go-metadata":
         try:
             res_dict = toolkit.get_action('resource_show')(
                 context.copy(), {'id': data_dict.get('id')})
