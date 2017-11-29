@@ -109,10 +109,10 @@ def _migrate(args):
         try:
             resource = lc.action.resource_show(id=resource_id)
         except NotFound:
-            print('\tResource not found')
+            print(u'\tResource not found')
             continue
         if resource['url_type'] != 'upload':
-            print('\t`url_type` is not `upload`. Skip')
+            print(u'\t`url_type` is not `upload`. Skip')
             continue
 
         with open(file_path, 'rb') as fin:
@@ -125,12 +125,12 @@ def _migrate(args):
                 uploader.upload(resource['id'])
             except Exception as e:
                 failed.append(resource_id)
-                print('\tError of type {0} during upload: {1}'.format(type(e), e))
+                print(u'\tError of type {0} during upload: {1}'.format(type(e), e))
 
     if failed:
         log_file = tempfile.NamedTemporaryFile(delete=False)
         log_file.file.writelines(failed)
-        print('ID of all failed uploads are saved to `{0}`'.format(log_file.name))
+        print(u'ID of all failed uploads are saved to `{0}`'.format(log_file.name))
 
 
 def _fix_cors(args):
