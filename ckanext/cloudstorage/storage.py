@@ -334,7 +334,14 @@ class ResourceCloudStorage(CloudStorage):
         elif self.can_use_advanced_google_cloud and self.use_secure_urls:
             from google.cloud import storage
 
-            client = storage.client.Client()
+            # Read service account JSON credentials file if provided
+            if self.driver_options['service_account_json']:
+                client = storage.client.Client.from_service_account_json(
+                    self.driver_options['service_account_json'])
+            # else rely on implicit credentials
+            # (see https://googlecloudplatform.github.io/google-cloud-python/latest/core/auth.html)
+            else:
+                client = storage.client.Client()
 
             bucket = client.get_bucket(self.container_name)
 
