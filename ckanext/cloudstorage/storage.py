@@ -344,9 +344,8 @@ class ResourceCloudStorage(CloudStorage):
                 client = storage.client.Client()
 
             bucket = client.get_bucket(self.container_name)
-
             blob = bucket.get_object(path)
-            return generate_signed_url(
+            return blob.generate_signed_url(
                 expiration=60*60,
                 method='GET'
             )
