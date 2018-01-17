@@ -27,7 +27,7 @@ services:
       - CKAN_SITE_URL=${CKAN_SITE_URL}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - DS_RO_PASS=${DATASTORE_READONLY_PASSWORD}
-      - CKAN_PLUGINS=datastore cloudstorage
+      - CKAN_PLUGINS=datastore 
 
     volumes:
       - ckan_storage:/var/lib/ckan
@@ -42,7 +42,7 @@ services:
 
   db:
     container_name: db
-    image: thedataplace/ckan-db:2.7.2
+    build: postgresql/
     environment:
       - DS_RO_PASS=${DATASTORE_READONLY_PASSWORD}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -51,7 +51,9 @@ services:
 
   solr:
     container_name: solr
-    image: thedataplace/ckan-solr:2.7.2
+    build: solr/
+    ports:
+      - 8983:8983
 
   redis:
     container_name: redis
