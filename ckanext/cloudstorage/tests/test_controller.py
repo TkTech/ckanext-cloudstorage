@@ -29,7 +29,7 @@ class TestStorageController(helpers.FunctionalTestBase):
     def test_resource_show_url(self):
         """The resource_show url is expected for uploaded resource file."""
 
-        resource_demo, _ = self._upload_resource()
+        resource, demo, _ = self._upload_resource()
 
         # does resource_show have the expected resource file url?
         resource_show = demo.action.resource_show(id=resource['id'])
