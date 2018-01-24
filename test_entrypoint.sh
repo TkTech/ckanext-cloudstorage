@@ -14,7 +14,7 @@ cd $CKAN_VENV/src/ckan
 ckan-paster datastore set-permissions -c test-core.ini | PGPASSWORD=ckan psql -h db
 
 echo "configure solr"
-curl 'http://solr:8983/solr/admin/cores?action=CREATE&name=ckan&instanceDir=/etc/solr/ckan'
+curl 'http://solr:8983/solr/admin/cores?action=CREATE&name=ckan-test&instanceDir=/etc/solr/ckan-test'
 
 echo "exiting test_entrypoint.sh"
 # hand over control to ckan-entrypoint, including CMD args

@@ -16,7 +16,8 @@ RUN ckan-pip install --upgrade \
     enum34 \
     boto==2.38.0 \
     moto==0.4.4 \
-    ckanapi==3.5
+    httpretty==0.6.2 \
+    ckanapi==3.5 
 
 COPY test_entrypoint.sh  $CKAN_VENV/src/ckanext-cloudstorage/test_entrypoint.sh
 RUN cp -v $CKAN_VENV/src/ckanext-cloudstorage/test_entrypoint.sh /test_entrypoint.sh && \
