@@ -1,5 +1,5 @@
 import os
-from nose.tools import assert_equal, assert_true, assert_false
+from nose.tools import assert_equal
 from mock import create_autospec, patch, MagicMock
 import ckanapi
 from webtest import Upload
@@ -14,7 +14,6 @@ from libcloud.storage.types import Provider
 from libcloud.storage.providers import get_driver
 
 google_driver = get_driver(Provider.GOOGLE_STORAGE)
-mock_driver = create_autospec(google_driver)
 
 
 class Uploader(Upload):

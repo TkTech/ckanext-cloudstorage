@@ -18,3 +18,4 @@ fl_notes.txt
 *.ini
 .noseids
 *~
+.coverage
