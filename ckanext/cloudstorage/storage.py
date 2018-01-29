@@ -5,8 +5,8 @@ import mimetypes
 import os.path
 import urlparse
 from ast import literal_eval
-from datetime import datetime, timedelta
-
+from datetime import timedelta
+import datetime
 from pylons import config
 from ckan import model
 from ckan.lib import munge
@@ -337,3 +337,126 @@ class ResourceCloudStorage(CloudStorage):
     @property
     def package(self):
         return model.Package.get(self.resource['package_id'])
+
+
+class FileCloudStorage(CloudStorage):
+    """
+    Support upload of general files to cloudstorage.
+    """
+    def __init__(self, upload_to, old_filename=None):
+        super(CloudStorage, self).__init__()
+
+        self.filename = None
+        self.filepath = None
+        self.old_filename = old_filename
+        if self.old_filename:
+            self.old_filepath = os.path.join('storage', 'uplaods', old_filename)
+
+    def path_from_filename(self, filename):
+        """
+        Returns a bucket path for the given filename.
+
+        :param: filename: The unmunged filename.
+        """
+        return os.path.join(
+            'storage',
+            'uploads',
+            munge.munge_filename(filename)
+        )
+
+    def update_data_dict(self, data_dict, url_field, file_field, clear_field):
+        """
+        Manipulate data from the data_dict. THis needs to be called before it
+        reaches any validators.
+
+        :param url_field: Name of the field where the upload is going to be
+        :param file_field: Name of the key where the FieldStorage is kept (i.e.
+        the field where the file data actually is).
+        :param clear_field: Name of a boolean field which requests the upload
+        to be deleted
+        """
+
+        self.url = data_dict.get(url_field, '')
+        self.clear = data_dict.pop(clear_field, None)
+        self.file_field = file_field
+        self.upload_field_storage = data_dict.pop(file_field, None)
+
+        if hasattr(self.upload_field_storage, 'filename'):
+            self.filename = self.upload_field_storage.filename
+            self.filename = str(datetime.datetime.utcnow()) + self.filename
+            self.filename = munge.munge_filename_legacy(self.filename)
+            self.filepath = os.path.join('storage', 'uplaods', self.filename)
+            data_dict[url_field] = self.filename
+            self.uplaod_file = self.upload_field_storage.file
+        # keep the file if there has been no change
+        elif self.old_filename and not self.old_filename.startswith('http'):
+            if not self.clear:
+                data_dict[url_field] = self.old_filename
+            if self.clear and self.url == self.old_filename:
+                data_dict[url_field] = ''
+
+    def upload(self, max_size=2):
+        """
+        Complete the fileupload, or clear an existing upload.
+
+        This should happen just before a commit but after the data has
+        been validated and flushed to the db. This is so we do not store
+        anything unless the request is actually good.
+        :param max_size: maximum file size in MB
+        """
+        # If a filename has been provided (a file is being uplaoded) write the
+        # file to the appropriate key in the container
+        if self.filename:
+            if self.can_use_advanced_azure:
+                from azure.storage import blob as azure_blob
+                from azure.storage.blob.models import ContentSettings
+
+                blob_service = azure_blob.BlockBlobService(
+                    self.driver_options['key'],
+                    self.driver_options['secret']
+                )
+                content_settings = None
+                if self.guess_mimetype:
+                    content_type, _ = mimetypes.guess_type(self.filename)
+                    if content_type:
+                        content_settings = ContentSettings(
+                            content_type=content_type
+                        )
+
+                return blob_service.create_blob_from_stream(
+                    container_name=self.container_name,
+                    blob_name=self.path_from_filename(
+                        self.filename
+                    ),
+                    stream=self.file_upload,
+                    content_settings=content_settings
+                )
+            else:
+                print('uploading to', self.path_from_filename(self.filename))
+                self.container.upload_object_via_stream(
+                    self.file_upload,
+                    object_name=self.path_from_filename(
+                        self.filename
+                    )
+                )
+            # self.upload_to_key(self.filepath, self.upload_file,
+            #                    make_public=True)
+            self.clear = True
+        if (self.clear and self.old_filename
+                and not self.old_filename.startwith('http')):
+            try:
+                self.container.delete_object(
+                    self.container.get_object(
+                        self.path_from_filename(
+                            self.old_filename
+                        )
+                    )
+                )
+            except ObjectDoesNotExistError:
+                # It's possible for the object to have already been deleted, or
+                # for it to not yet exist in a committed state due to an
+                # outstanding lease.
+                return
+
+
+

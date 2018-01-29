@@ -52,3 +52,13 @@ class StorageController(base.BaseController):
             base.abort(404, _('No download is available'))
 
         h.redirect_to(uploaded_url)
+        print('method calls', container.method_calls)
+
+    def uploaded_file_redirect(self, upload_to, filename):
+        '''Redirect static file requests to their location on S3.'''
+        storage_path = S3Uploader.get_storage_path(upload_to)
+        filepath = os.path.join(storage_path, filename)
+        redirect_url = 'https://{bucket_name}.s3.amazonaws.com/{filepath}' \
+            .format(bucket_name=config.get('ckanext.s3filestore.aws_bucket_name'),
+                                            filepath=filepath)
+        redirect(redirect_url)

@@ -53,9 +53,9 @@ class CloudStoragePlugin(plugins.SingletonPlugin):
         return storage.ResourceCloudStorage(data_dict)
 
     def get_uploader(self, upload_to, old_filename=None):
-        # We don't provide misc-file storage (group images for example)
-        # Returning None here will use the default Uploader.
-        return None
+        # Custom uploader for generic file uploads
+        print('get uploader')
+        return storage.FileCloudStorage(upload_to, old_filename)
 
     def before_map(self, map):
         sm = SubMapper(

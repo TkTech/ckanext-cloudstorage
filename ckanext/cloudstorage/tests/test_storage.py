@@ -1,6 +1,8 @@
 import os
 from nose.tools import assert_equal
 from mock import create_autospec, patch, MagicMock
+import datetime
+
 import ckanapi
 from webtest import Upload
 
@@ -22,10 +24,10 @@ class Uploader(Upload):
 
     def __init__(self, *args, **kwargs):
         self.file = kwargs.pop('file')
-        super(Uplaoder, self).__init__(*args, **kwargs)
+        super(Uploader, self).__init__(*args, **kwargs)
 
 
-class TestS3Uploader(helpers.FunctionalTestBase):
+class TestResourceUploader(helpers.FunctionalTestBase):
 
     @patch('ckanext.cloudstorage.storage.get_driver')
     def test_resource_upload(self, get_driver):
@@ -119,4 +121,87 @@ class TestS3Uploader(helpers.FunctionalTestBase):
 
         app.post(url, {'clear_uplaod': True, 'id': '', # empty id from the form
             'url': 'http://asdf', 'save': 'save'}, extra_environ=env)
+
+
+class TestFileCloudStorage(helpers.FunctionalTestBase):
+
+    # @patch('ckanext.cloudstorage.storage.get_driver')
+    def test_group_image_uplaod(self):
+        """Test a group image file uplaod."""
+        # mock_driver = MagicMock(spec=google_driver, name='driver')
+        # container = MagicMock(name='container')
+        # mock_driver.get_container.return_value = container
+        # mock_driver.get_object_cdn_url.return_value = 'http://cdn.url'
+        # get_driver.return_value = MagicMock(return_value=mock_driver)
+
+        sysadmin = factories.Sysadmin(apikey='my-test-key')
+
+        file_path = os.path.join(os.path.dirname(__file__), 'data.csv')
+        filename = 'image.png'
+
+        img_uploader = Uploader(filename, file=open(file_path))
+
+        with patch('ckanext.cloudstorage.storage.datetime') as mock_date:
+            mock_date.datetime.utcnow.return_value = \
+                datetime.datetime(2001, 1, 29)
+            context = {'user': sysadmin['name']}
+            helpers.call_action('group_create', context=context,
+                                name='my-group',
+                                image_uplaods=img_uploader,
+                                image_url=filename,
+                                save='save')
+
+        key = "storage/uploads/group/2001-01-29-000000{0}" \
+            .format(filename)
+
+        group = helpers.call_action('group_show', id='my-group')
+        print('group', group)
+
+        # args, kwargs = container.upload_object_via_datastream.call_args
+        # assert_equal(kwargs['object_name'], key)
+
+        app = self._get_test_app()
+        image_file_url = '/uploads/group/{0}'.format(filename)
+        r = app.get(image_file_url)
+        assert(r.location, 'http://cdn.url')
+
+    # @patch('ckanext.cloudstorage.storage.get_driver')
+    # @patch('ckanext.cloudstorage.storage.FileCloudStorage.upload')
+    def test_group_image_upload_then_clear(self):
+        """Test that clearing an upload calls delete_object"""
+        # mock_driver = MagicMock(spec=google_driver, name='driver')
+        # container = MagicMock(name='container')
+        # mock_driver.get_container.return_value = container
+        # get_driver.return_value = MagicMock(return_value=mock_driver)
+
+        sysadmin = factories.Sysadmin(apikey='my-test-apikey')
+
+        file_path = os.path.join(os.path.dirname(__file__), 'data.csv')
+        file_name = 'image.png'
+
+        img_uploader = Uploader(file_name, file=open(file_path))
+
+        with patch('ckanext.cloudstorage.storage.datetime') as mock_date:
+            mock_date.datetime.utcnow.return_value = \
+                datetime.datetime(2001, 1, 29)
+            context = {'user': sysadmin['name']}
+            helpers.call_action('group_create', context=context,
+                                name='my-group',
+                                image_uplaod=img_uploader,
+                                image_url=file_name)
+
+        key = 'storage/uploads/group/2001-01-29-000000{0}' \
+            .format(file_name)
+
+        # assert uplaod was called
+        # upload.assert_called() 
+
+        helpers.call_action('group_update', context=context,
+                            id='my-group', name='my-group',
+                            image_url='http://example', clear_update=True)
+        # assert delete object is called
+        # container.delete_object.assert_called()
+
+
+
 
