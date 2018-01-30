@@ -52,7 +52,6 @@ class StorageController(base.BaseController):
             base.abort(404, _('No download is available'))
 
         h.redirect_to(uploaded_url)
-        print('method calls', container.method_calls)
 
     def uploaded_file_redirect(self, upload_to, filename):
         '''Redirect static file requests to their location on cloudstorage.'''

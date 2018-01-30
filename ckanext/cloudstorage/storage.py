@@ -158,6 +158,59 @@ class CloudStorage(object):
         else:
             raise NotImplementedError("This method hasn't been implemented yet for this driver.")
 
+    def upload_to_path(self, file_path):
+        """
+        Upload to storage bucket
+
+        :param file_path: File path in storage bucket
+        :param old_file_path: File path of old file in storage bucket.
+        """
+
+        if self.can_use_advanced_azure:
+            from azure.storage import blob as azure_blob
+            from azure.storage.blob.models import ContentSettings
+
+            blob_service = azure_blob.BlockBlobService(
+                self.driver_options['key'],
+                self.driver_options['secret']
+            )
+            content_settings = None
+            if self.guess_mimetype:
+                content_type, _ = mimetypes.guess_type(file_path)
+                if content_type:
+                    content_settings = ContentSettings(
+                        content_type=content_type
+                    )
+
+            return blob_service.create_blob_from_stream(
+                container_name=self.container_name,
+                blob_name=file_path,
+                stream=self.file_upload,
+                content_settings=content_settings
+            )
+        else:
+            self.container.upload_object_via_stream(
+                self.file_upload,
+                object_name=file_path
+            )
+
+    def delete_object_from_path(self, file_path):
+        """
+        Delete object from cloudstorage at `file_path`
+        :param file_path: Path of file to be deletedd
+        """
+        try:
+            self.container.delete_object(
+                self.container.get_object(
+                    old_file_path
+                )
+            )
+        except ObjectDoesNotExistError:
+            # It's possible for the object to have already been deleted, or
+            # for it to not yet exist in a committed state due to an
+            # outstanding lease.
+            return
+
 
 class ResourceCloudStorage(CloudStorage):
     def __init__(self, resource):
@@ -223,58 +276,15 @@ class ResourceCloudStorage(CloudStorage):
         :param id: The resource_id.
         :param max_size: Ignored.
         """
+        # If a filename has been provided (a file is being uplaoded) write the
+        # file to the appropriate key in the container
         if self.filename:
-            if self.can_use_advanced_azure:
-                from azure.storage import blob as azure_blob
-                from azure.storage.blob.models import ContentSettings
+            file_path = self.path_from_filename(id, self.filename)
+            self.upload_to_path(file_path)
+        if self._clear and self.old_filename and not self.leave_files:
+            old_file_path = self.path_from_filename(id, self.old_filename)
+            self.delete_object_from_path(old_file_path)
 
-                blob_service = azure_blob.BlockBlobService(
-                    self.driver_options['key'],
-                    self.driver_options['secret']
-                )
-                content_settings = None
-                if self.guess_mimetype:
-                    content_type, _ = mimetypes.guess_type(self.filename)
-                    if content_type:
-                        content_settings = ContentSettings(
-                            content_type=content_type
-                        )
-
-                return blob_service.create_blob_from_stream(
-                    container_name=self.container_name,
-                    blob_name=self.path_from_filename(
-                        id,
-                        self.filename
-                    ),
-                    stream=self.file_upload,
-                    content_settings=content_settings
-                )
-            else:
-                self.container.upload_object_via_stream(
-                    self.file_upload,
-                    object_name=self.path_from_filename(
-                        id,
-                        self.filename
-                    )
-                )
-
-        elif self._clear and self.old_filename and not self.leave_files:
-            # This is only set when a previously-uploaded file is replace
-            # by a link. We want to delete the previously-uploaded file.
-            try:
-                self.container.delete_object(
-                    self.container.get_object(
-                        self.path_from_filename(
-                            id,
-                            self.old_filename
-                        )
-                    )
-                )
-            except ObjectDoesNotExistError:
-                # It's possible for the object to have already been deleted, or
-                # for it to not yet exist in a committed state due to an
-                # outstanding lease.
-                return
 
     def get_url_from_filename(self, rid, filename):
         """
@@ -367,7 +377,7 @@ class FileCloudStorage(CloudStorage):
         self.filepath = None
         self.old_filename = old_filename
         if self.old_filename:
-            self.old_filepath = os.path.join('storage', 'uplaods', old_filename)
+            self.old_filepath = os.path.join('storage', 'uploads', old_filename)
 
     def path_from_filename(self, filename):
         """
@@ -394,7 +404,7 @@ class FileCloudStorage(CloudStorage):
         """
 
         self.url = data_dict.get(url_field, '')
-        self.clear = data_dict.pop(clear_field, None)
+        self._clear = data_dict.pop(clear_field, None)
         self.file_field = file_field
         self.upload_field_storage = data_dict.pop(file_field, None)
 
@@ -407,9 +417,9 @@ class FileCloudStorage(CloudStorage):
             self.file_upload = self.upload_field_storage.file
         # keep the file if there has been no change
         elif self.old_filename and not self.old_filename.startswith('http'):
-            if not self.clear:
+            if not self._clear:
                 data_dict[url_field] = self.old_filename
-            if self.clear and self.url == self.old_filename:
+            if self._clear and self.url == self.old_filename:
                 data_dict[url_field] = ''
 
     def upload(self, max_size=2):
@@ -419,60 +429,14 @@ class FileCloudStorage(CloudStorage):
         This should happen just before a commit but after the data has
         been validated and flushed to the db. This is so we do not store
         anything unless the request is actually good.
-        :param max_size: maximum file size in MB
+        :param max_size: ignored
         """
-        # If a filename has been provided (a file is being uplaoded) write the
-        # file to the appropriate key in the container
         if self.filename:
-            if self.can_use_advanced_azure:
-                from azure.storage import blob as azure_blob
-                from azure.storage.blob.models import ContentSettings
-
-                blob_service = azure_blob.BlockBlobService(
-                    self.driver_options['key'],
-                    self.driver_options['secret']
-                )
-                content_settings = None
-                if self.guess_mimetype:
-                    content_type, _ = mimetypes.guess_type(self.filename)
-                    if content_type:
-                        content_settings = ContentSettings(
-                            content_type=content_type
-                        )
-
-                return blob_service.create_blob_from_stream(
-                    container_name=self.container_name,
-                    blob_name=self.path_from_filename(
-                        self.filename
-                    ),
-                    stream=self.file_upload,
-                    content_settings=content_settings
-                )
-            else:
-                self.container.upload_object_via_stream(
-                    self.file_upload,
-                    object_name=self.path_from_filename(
-                        self.filename
-                    )
-                )
-            # self.upload_to_key(self.filepath, self.upload_file,
-            #                    make_public=True)
-            self.clear = True
-        if (self.clear and self.old_filename
-                and not self.old_filename.startswith('http')):
-            try:
-                self.container.delete_object(
-                    self.container.get_object(
-                        self.path_from_filename(
-                            self.old_filename
-                        )
-                    )
-                )
-            except ObjectDoesNotExistError:
-                # It's possible for the object to have already been deleted, or
-                # for it to not yet exist in a committed state due to an
-                # outstanding lease.
-                return
+            file_path = self.path_from_filename(self.filename)
+            return self.upload_to_path(file_path)
+        if self._clear and self.old_filename and not self.leave_files:
+            old_file_path = self.path_from_filename(self.old_filename)
+            self.delete_object_from_path(old_file_path) 
 
     def get_url_from_filename(self, filename):
         """
