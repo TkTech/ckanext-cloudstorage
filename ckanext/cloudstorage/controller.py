@@ -44,7 +44,8 @@ class StorageController(base.BaseController):
             filename = os.path.basename(resource['url'])
 
         upload = uploader.get_resource_uploader(resource)
-        uploaded_url = upload.get_url_from_filename(resource['id'], filename)
+        file_path = upload.path_from_filename(resource['id'], filename)
+        uploaded_url = upload.get_url_from_path(file_path)
 
         # The uploaded file is missing for some reason, such as the
         # provider being down.
@@ -56,5 +57,6 @@ class StorageController(base.BaseController):
     def uploaded_file_redirect(self, upload_to, filename):
         '''Redirect static file requests to their location on cloudstorage.'''
         upload = uploader.get_uploader('notused')
-        uploaded_url = upload.get_object_public_url(filename)
+        file_path = upload.path_from_filename(filename)
+        uploaded_url = upload.get_url_from_path(file_path)
         h.redirect_to(uploaded_url)

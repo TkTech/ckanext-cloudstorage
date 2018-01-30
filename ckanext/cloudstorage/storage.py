@@ -230,6 +230,92 @@ class CloudStorage(object):
             # outstanding lease.
             return
 
+    def get_url_from_path(self, path):
+        """
+        Retrieve a publically accessible URL for the given path
+
+        .. note::
+
+            Works for Azure and any libcloud driver that implements
+            support for get_object_cdn_url (ex: AWS S3, Google Storage).
+
+        :param path: The resource path.
+
+        :returns: Externally accessible URL or None.
+        """
+        # If advanced azure features are enabled, generate a temporary
+        # shared access link instead of simply redirecting to the file.
+        if self.can_use_advanced_azure and self.use_secure_urls:
+            from azure.storage import blob as azure_blob
+
+            blob_service = azure_blob.BlockBlobService(
+                self.driver_options['key'],
+                self.driver_options['secret']
+            )
+
+            return blob_service.make_blob_url(
+                container_name=self.container_name,
+                blob_name=path,
+                sas_token=blob_service.generate_blob_shared_access_signature(
+                    container_name=self.container_name,
+                    blob_name=path,
+                    expiry=datetime.utcnow() + timedelta(hours=1),
+                    permission=azure_blob.BlobPermissions.READ
+                )
+            )
+        elif self.can_use_advanced_aws and self.use_secure_urls:
+            from boto.s3.connection import S3Connection
+            s3_connection = S3Connection(
+                self.driver_options['key'],
+                self.driver_options['secret']
+            )
+            return s3_connection.generate_url(
+                expires_in=60 * 60,
+                method='GET',
+                bucket=self.container_name,
+                query_auth=True,
+                key=path
+            )
+
+
+        elif self.can_use_advanced_google_cloud and self.use_secure_urls:
+            from google.cloud import storage
+
+            client = storage.client.Client.from_service_account_json(
+                self.driver_options['secret']
+            )
+
+            bucket = client.get_bucket(self.container_name)
+            blob = bucket.get_object(path)
+            return blob.generate_signed_url(
+                expiration=60*60,
+                method='GET'
+            )
+
+        # Find the object for the given key.
+        obj = self.container.get_object(path)
+        if obj is None:
+            return
+
+        # Not supported by all providers!
+        try:
+            return self.driver.get_object_cdn_url(obj)
+        except NotImplementedError:
+            if 'S3' in self.driver_name or 'GOOGLE_STORAGE' in self.driver_name:
+                return urlparse.urljoin(
+                    'https://' + self.driver.connection.host,
+                    '{container}/{path}'.format(
+                        container=self.container_name,
+                        path=path
+                    )
+                )
+            # This extra 'url' property isn't documented anywhere, sadly.
+            # See azure_blobs.py:_xml_to_object for more.
+            elif 'url' in obj.extra:
+                return obj.extra['url']
+            raise
+
+
 
 class ResourceCloudStorage(CloudStorage):
     def __init__(self, resource):
@@ -304,101 +390,15 @@ class ResourceCloudStorage(CloudStorage):
             old_file_path = self.path_from_filename(id, self.old_filename)
             self.delete_object_from_path(old_file_path)
 
-
-    def get_url_from_filename(self, rid, filename):
+    def get_url_from_filename(self, id, filename):
         """
-        Retrieve a publically accessible URL for the given resource_id
-        and filename.
-
-        .. note::
-
-            Works for Azure and any libcloud driver that implements
-            support for get_object_cdn_url (ex: AWS S3).
-
-        :param rid: The resource ID.
-        :param filename: The resource filename.
-
-        :returns: Externally accessible URL or None.
+        Generate public URL from resource id and filename
+        :param id: The resource ID
+        :param filename: The resource filename
         """
-        # Find the key the file *should* be stored at.
-        path = self.path_from_filename(rid, filename)
+        path = self.path_from_filename(id, filename)
+        return self.get_url_from_path(path)
 
-        # If advanced azure features are enabled, generate a temporary
-        # shared access link instead of simply redirecting to the file.
-        if self.can_use_advanced_azure and self.use_secure_urls:
-            from azure.storage import blob as azure_blob
-
-            blob_service = azure_blob.BlockBlobService(
-                self.driver_options['key'],
-                self.driver_options['secret']
-            )
-
-            return blob_service.make_blob_url(
-                container_name=self.container_name,
-                blob_name=path,
-                sas_token=blob_service.generate_blob_shared_access_signature(
-                    container_name=self.container_name,
-                    blob_name=path,
-                    expiry=datetime.utcnow() + timedelta(hours=1),
-                    permission=azure_blob.BlobPermissions.READ
-                )
-            )
-        elif self.can_use_advanced_aws and self.use_secure_urls:
-            from boto.s3.connection import S3Connection
-            s3_connection = S3Connection(
-                self.driver_options['key'],
-                self.driver_options['secret']
-            )
-            return s3_connection.generate_url(
-                expires_in=60 * 60,
-                method='GET',
-                bucket=self.container_name,
-                query_auth=True,
-                key=path
-            )
-
-
-        elif self.can_use_advanced_google_cloud and self.use_secure_urls:
-            from google.cloud import storage
-
-            # Read service account JSON credentials file if provided
-            if self.driver_options['service_account_json']:
-                client = storage.client.Client.from_service_account_json(
-                    self.driver_options['service_account_json'])
-            # else rely on implicit credentials
-            # (see https://googlecloudplatform.github.io/google-cloud-python/latest/core/auth.html)
-            else:
-                client = storage.client.Client()
-
-            bucket = client.get_bucket(self.container_name)
-            blob = bucket.get_object(path)
-            return blob.generate_signed_url(
-                expiration=60*60,
-                method='GET'
-            )
-        
-        # Find the object for the given key.
-        obj = self.container.get_object(path)
-        if obj is None:
-            return
-
-        # Not supported by all providers!
-        try:
-            return self.driver.get_object_cdn_url(obj)
-        except NotImplementedError:
-            if 'S3' in self.driver_name:
-                return urlparse.urljoin(
-                    'https://' + self.driver.connection.host,
-                    '{container}/{path}'.format(
-                        container=self.container_name,
-                        path=path
-                    )
-                )
-            # This extra 'url' property isn't documented anywhere, sadly.
-            # See azure_blobs.py:_xml_to_object for more.
-            elif 'url' in obj.extra:
-                return obj.extra['url']
-            raise
 
     @property
     def package(self):
@@ -479,78 +479,9 @@ class FileCloudStorage(CloudStorage):
 
     def get_url_from_filename(self, filename):
         """
-        Retrieve a publically accessible URL for the given filename.
-
-        .. note::
-
-            Works for Azure and any libcloud driver that implements
-            support for get_object_cdn_url (ex: AWS S3).
-
-        :param filename: The resource filename.
-
-        :returns: Externally accessible URL or None.
+        Get public url from filename
+        :param filename: name of file
         """
-        # Find the key the file *should* be stored at.
         path = self.path_from_filename(filename)
-
-        # If advanced azure features are enabled, generate a temporary
-        # shared access link instead of simply redirecting to the file.
-        if self.can_use_advanced_azure and self.use_secure_urls:
-            from azure.storage import blob as azure_blob
-
-            blob_service = azure_blob.BlockBlobService(
-                self.driver_options['key'],
-                self.driver_options['secret']
-            )
-
-            return blob_service.make_blob_url(
-                container_name=self.container_name,
-                blob_name=path,
-                sas_token=blob_service.generate_blob_shared_access_signature(
-                    container_name=self.container_name,
-                    blob_name=path,
-                    expiry=datetime.utcnow() + timedelta(hours=1),
-                    permission=azure_blob.BlobPermissions.READ
-                )
-            )
-        elif self.can_use_advanced_aws and self.use_secure_urls:
-            from boto.s3.connection import S3Connection
-            s3_connection = S3Connection(
-                self.driver_options['key'],
-                self.driver_options['secret']
-            )
-            return s3_connection.generate_url(
-                expires_in=60 * 60,
-                method='GET',
-                bucket=self.container_name,
-                query_auth=True,
-                key=path
-            )
-
-        # Find the object for the given key.
-        obj = self.container.get_object(path)
-        if obj is None:
-            return
-
-        # Not supported by all providers!
-        try:
-            return self.driver.get_object_cdn_url(obj)
-        except NotImplementedError:
-            if 'S3' in self.driver_name:
-                return urlparse.urljoin(
-                    'https://' + self.driver.connection.host,
-                    '{container}/{path}'.format(
-                        container=self.container_name,
-                        path=path
-                    )
-                )
-            # This extra 'url' property isn't documented anywhere, sadly.
-            # See azure_blobs.py:_xml_to_object for more.
-            elif 'url' in obj.extra:
-                return obj.extra['url']
-            raise
-
-
-
-
+        return self.get_url_from_path(path)
 
