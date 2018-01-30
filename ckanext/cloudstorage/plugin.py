@@ -77,6 +77,12 @@ class CloudStoragePlugin(plugins.SingletonPlugin):
                 action='resource_download'
             )
 
+            sm.connect(
+                'uploaded_file',
+                '/uploads/{upload_to}/{filename}',
+                action='uploaded_file_redirect'
+            )
+
         return map
 
     # IActions

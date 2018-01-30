@@ -18,6 +18,7 @@ from libcloud.storage.providers import get_driver
 
 class CloudStorage(object):
     def __init__(self):
+        print('cloudstorage init')
         self.driver = get_driver(
             getattr(
                 Provider,
@@ -140,6 +141,22 @@ class CloudStorage(object):
         return p.toolkit.asbool(
             config.get('ckanext.cloudstorage.guess_mimetype', False)
         )
+
+    def get_object_public_url(self, filename):
+        """
+        Returns the public url of an object.
+        Raises `NotImplementedError` for drivers yet unsupported, or when
+        `use_secure_urls` is set to `True`.
+
+        Assumes container is made public.
+        """
+        if self.driver_name == 'GOOGLE_STORAGE':
+            if self.use_secure_urls:
+                raise NotImplementedError("Should be pretty easy though!")
+            return "https://storage.googleapis.com/{0}/{1}" \
+                    .format(self.container_name, self.path_from_filename(filename))
+        else:
+            raise NotImplementedError("This method hasn't been implemented yet for this driver.")
 
 
 class ResourceCloudStorage(CloudStorage):
@@ -344,7 +361,7 @@ class FileCloudStorage(CloudStorage):
     Support upload of general files to cloudstorage.
     """
     def __init__(self, upload_to, old_filename=None):
-        super(CloudStorage, self).__init__()
+        super(FileCloudStorage, self).__init__()
 
         self.filename = None
         self.filepath = None
@@ -387,7 +404,7 @@ class FileCloudStorage(CloudStorage):
             self.filename = munge.munge_filename_legacy(self.filename)
             self.filepath = os.path.join('storage', 'uplaods', self.filename)
             data_dict[url_field] = self.filename
-            self.uplaod_file = self.upload_field_storage.file
+            self.file_upload = self.upload_field_storage.file
         # keep the file if there has been no change
         elif self.old_filename and not self.old_filename.startswith('http'):
             if not self.clear:
@@ -432,7 +449,6 @@ class FileCloudStorage(CloudStorage):
                     content_settings=content_settings
                 )
             else:
-                print('uploading to', self.path_from_filename(self.filename))
                 self.container.upload_object_via_stream(
                     self.file_upload,
                     object_name=self.path_from_filename(
@@ -443,7 +459,7 @@ class FileCloudStorage(CloudStorage):
             #                    make_public=True)
             self.clear = True
         if (self.clear and self.old_filename
-                and not self.old_filename.startwith('http')):
+                and not self.old_filename.startswith('http')):
             try:
                 self.container.delete_object(
                     self.container.get_object(
@@ -457,6 +473,81 @@ class FileCloudStorage(CloudStorage):
                 # for it to not yet exist in a committed state due to an
                 # outstanding lease.
                 return
+
+    def get_url_from_filename(self, filename):
+        """
+        Retrieve a publically accessible URL for the given filename.
+
+        .. note::
+
+            Works for Azure and any libcloud driver that implements
+            support for get_object_cdn_url (ex: AWS S3).
+
+        :param filename: The resource filename.
+
+        :returns: Externally accessible URL or None.
+        """
+        # Find the key the file *should* be stored at.
+        path = self.path_from_filename(filename)
+
+        # If advanced azure features are enabled, generate a temporary
+        # shared access link instead of simply redirecting to the file.
+        if self.can_use_advanced_azure and self.use_secure_urls:
+            from azure.storage import blob as azure_blob
+
+            blob_service = azure_blob.BlockBlobService(
+                self.driver_options['key'],
+                self.driver_options['secret']
+            )
+
+            return blob_service.make_blob_url(
+                container_name=self.container_name,
+                blob_name=path,
+                sas_token=blob_service.generate_blob_shared_access_signature(
+                    container_name=self.container_name,
+                    blob_name=path,
+                    expiry=datetime.utcnow() + timedelta(hours=1),
+                    permission=azure_blob.BlobPermissions.READ
+                )
+            )
+        elif self.can_use_advanced_aws and self.use_secure_urls:
+            from boto.s3.connection import S3Connection
+            s3_connection = S3Connection(
+                self.driver_options['key'],
+                self.driver_options['secret']
+            )
+            return s3_connection.generate_url(
+                expires_in=60 * 60,
+                method='GET',
+                bucket=self.container_name,
+                query_auth=True,
+                key=path
+            )
+
+        # Find the object for the given key.
+        obj = self.container.get_object(path)
+        if obj is None:
+            return
+
+        # Not supported by all providers!
+        try:
+            return self.driver.get_object_cdn_url(obj)
+        except NotImplementedError:
+            if 'S3' in self.driver_name:
+                return urlparse.urljoin(
+                    'https://' + self.driver.connection.host,
+                    '{container}/{path}'.format(
+                        container=self.container_name,
+                        path=path
+                    )
+                )
+            # This extra 'url' property isn't documented anywhere, sadly.
+            # See azure_blobs.py:_xml_to_object for more.
+            elif 'url' in obj.extra:
+                return obj.extra['url']
+            raise
+
+
 
 
 
