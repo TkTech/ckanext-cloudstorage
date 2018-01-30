@@ -416,7 +416,7 @@ class FileCloudStorage(CloudStorage):
         self.filepath = None
         self.old_filename = old_filename
         if self.old_filename:
-            self.old_filepath = os.path.join('storage', 'uploads', old_filename)
+            self.old_filepath = self.path_from_filename(old_filename)
 
     def path_from_filename(self, filename):
         """
@@ -451,7 +451,7 @@ class FileCloudStorage(CloudStorage):
             self.filename = self.upload_field_storage.filename
             self.filename = str(datetime.datetime.utcnow()) + self.filename
             self.filename = munge.munge_filename_legacy(self.filename)
-            self.filepath = os.path.join('storage', 'uplaods', self.filename)
+            self.filepath = self.path_from_filename(self.filename)
             data_dict[url_field] = self.filename
             self.file_upload = self.upload_field_storage.file
         # keep the file if there has been no change
