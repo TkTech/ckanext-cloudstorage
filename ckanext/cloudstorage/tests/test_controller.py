@@ -73,8 +73,8 @@ class TestStorageController(helpers.FunctionalTestBase):
         resource_show = demo.action.resource_show(id=resource['id'])
         resource_file_url = resource_show['url']
 
-        assert_equal(resource_file_url, '{2}/dataset/{0}/resource/{1}/download/data.csv' \
-            .format(resource['package_id'], resource['id'], 'http://ckan:5000'))
+        assert_equal(resource_file_url, u'{2}/dataset/{0}/resource/{1}/download/data.csv' \
+            .format(resource['package_id'], resource['id'], 'http://localhost:5000'))
 
     @patch('ckanext.cloudstorage.storage.get_driver')
     @patch('ckanext.cloudstorage.controller.h')

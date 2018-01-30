@@ -18,7 +18,6 @@ from libcloud.storage.providers import get_driver
 
 class CloudStorage(object):
     def __init__(self):
-        print('cloudstorage init')
         self.driver = get_driver(
             getattr(
                 Provider,
@@ -221,7 +220,7 @@ class CloudStorage(object):
         try:
             self.container.delete_object(
                 self.container.get_object(
-                    old_file_path
+                    file_path
                 )
             )
         except ObjectDoesNotExistError:
