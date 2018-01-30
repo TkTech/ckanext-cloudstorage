@@ -133,6 +133,25 @@ class CloudStorage(object):
         return False
 
     @property
+    def can_use_advanced_google_cloud(self):
+        """
+        `True` if the `google-cloud` module is installed and ckanext-cloudstorage has
+        been configured to use Google Cloud Storage, otherwise `False`.
+        """
+        # Are we even using google cloud?
+        if 'GOOGLE_STORAGE' in self.driver_name:
+            try:
+                # Yes? is the google-cloud-storage package available?
+                from google.cloud import storage
+                # shut the linter up.
+                assert storage
+                return True
+            except ImportError:
+                pass
+
+        return False
+
+    @property
     def guess_mimetype(self):
         """
         `True` if ckanext-cloudstorage is configured to guess mime types,
@@ -338,6 +357,26 @@ class ResourceCloudStorage(CloudStorage):
                 key=path
             )
 
+
+        elif self.can_use_advanced_google_cloud and self.use_secure_urls:
+            from google.cloud import storage
+
+            # Read service account JSON credentials file if provided
+            if self.driver_options['service_account_json']:
+                client = storage.client.Client.from_service_account_json(
+                    self.driver_options['service_account_json'])
+            # else rely on implicit credentials
+            # (see https://googlecloudplatform.github.io/google-cloud-python/latest/core/auth.html)
+            else:
+                client = storage.client.Client()
+
+            bucket = client.get_bucket(self.container_name)
+            blob = bucket.get_object(path)
+            return blob.generate_signed_url(
+                expiration=60*60,
+                method='GET'
+            )
+        
         # Find the object for the given key.
         obj = self.container.get_object(path)
         if obj is None:
