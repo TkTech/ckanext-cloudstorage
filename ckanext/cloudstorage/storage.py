@@ -244,52 +244,55 @@ class CloudStorage(object):
         """
         # If advanced azure features are enabled, generate a temporary
         # shared access link instead of simply redirecting to the file.
-        if self.can_use_advanced_azure and self.use_secure_urls:
-            from azure.storage import blob as azure_blob
+        if self.use_secure_urls:
+            if self.can_use_advanced_azure:
+                from azure.storage import blob as azure_blob
 
-            blob_service = azure_blob.BlockBlobService(
-                self.driver_options['key'],
-                self.driver_options['secret']
-            )
+                blob_service = azure_blob.BlockBlobService(
+                    self.driver_options['key'],
+                    self.driver_options['secret']
+                )
 
-            return blob_service.make_blob_url(
-                container_name=self.container_name,
-                blob_name=path,
-                sas_token=blob_service.generate_blob_shared_access_signature(
+                return blob_service.make_blob_url(
                     container_name=self.container_name,
                     blob_name=path,
-                    expiry=datetime.utcnow() + timedelta(hours=1),
-                    permission=azure_blob.BlobPermissions.READ
+                    sas_token=blob_service.generate_blob_shared_access_signature(
+                        container_name=self.container_name,
+                        blob_name=path,
+                        expiry=datetime.utcnow() + timedelta(hours=1),
+                        permission=azure_blob.BlobPermissions.READ
+                    )
                 )
-            )
-        elif self.can_use_advanced_aws and self.use_secure_urls:
-            from boto.s3.connection import S3Connection
-            s3_connection = S3Connection(
-                self.driver_options['key'],
-                self.driver_options['secret']
-            )
-            return s3_connection.generate_url(
-                expires_in=60 * 60,
-                method='GET',
-                bucket=self.container_name,
-                query_auth=True,
-                key=path
-            )
+            elif self.can_use_advanced_aws:
+                from boto.s3.connection import S3Connection
+                s3_connection = S3Connection(
+                    self.driver_options['key'],
+                    self.driver_options['secret']
+                )
+                return s3_connection.generate_url(
+                    expires_in=60 * 60,
+                    method='GET',
+                    bucket=self.container_name,
+                    query_auth=True,
+                    key=path
+                )
 
+            elif self.can_use_advanced_google_cloud:
+                from google.cloud import storage
 
-        elif self.can_use_advanced_google_cloud and self.use_secure_urls:
-            from google.cloud import storage
+                client = storage.client.Client.from_service_account_json(
+                    self.driver_options['secret']
+                )
 
-            client = storage.client.Client.from_service_account_json(
-                self.driver_options['secret']
-            )
-
-            bucket = client.get_bucket(self.container_name)
-            blob = bucket.get_object(path)
-            return blob.generate_signed_url(
-                expiration=60*60,
-                method='GET'
-            )
+                bucket = client.get_bucket(self.container_name)
+                blob = bucket.get_blob(path)
+                return blob.generate_signed_url(
+                    expiration=timedelta(seconds=60*60),
+                    method='GET',
+                )
+            else:
+                raise Exception('Unable to generate secure url. Is your cloud \
+                    provider\'s driver installed?')
 
         # Find the object for the given key.
         obj = self.container.get_object(path)
@@ -313,7 +316,6 @@ class CloudStorage(object):
             elif 'url' in obj.extra:
                 return obj.extra['url']
             raise
-
 
 
 class ResourceCloudStorage(CloudStorage):

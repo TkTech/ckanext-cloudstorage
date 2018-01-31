@@ -44,8 +44,7 @@ class StorageController(base.BaseController):
             filename = os.path.basename(resource['url'])
 
         upload = uploader.get_resource_uploader(resource)
-        file_path = upload.path_from_filename(resource['id'], filename)
-        uploaded_url = upload.get_url_from_path(file_path)
+        uploaded_url = upload.get_url_from_filename(resource['id'], filename)
 
         # The uploaded file is missing for some reason, such as the
         # provider being down.
