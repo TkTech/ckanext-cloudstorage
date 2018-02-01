@@ -54,7 +54,6 @@ class CloudStoragePlugin(plugins.SingletonPlugin):
 
     def get_uploader(self, upload_to, old_filename=None):
         # Custom uploader for generic file uploads
-        print('get uploader')
         return storage.FileCloudStorage(upload_to, old_filename)
 
     def before_map(self, map):
