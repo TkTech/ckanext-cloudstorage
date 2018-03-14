@@ -134,8 +134,9 @@ class CloudStorage(object):
     @property
     def can_use_advanced_google_cloud(self):
         """
-        `True` if the `google-cloud` module is installed and ckanext-cloudstorage has
-        been configured to use Google Cloud Storage, otherwise `False`.
+        `True` if the `google-cloud` module is installed and
+        ckanext-cloudstorage has been configured to use Google Cloud Storage,
+        otherwise `False`.
         """
         # Are we even using google cloud?
         if 'GOOGLE_STORAGE' in self.driver_name:
@@ -172,9 +173,11 @@ class CloudStorage(object):
             if self.use_secure_urls:
                 raise NotImplementedError("Should be pretty easy though!")
             return "https://storage.googleapis.com/{0}/{1}" \
-                    .format(self.container_name, self.path_from_filename(filename))
+                .format(self.container_name,
+                        self.path_from_filename(filename))
         else:
-            raise NotImplementedError("This method hasn't been implemented yet for this driver.")
+            raise NotImplementedError(
+                    "This method hasn't been implemented yet for this driver.")
 
     def upload_to_path(self, file_path):
         """
@@ -400,7 +403,6 @@ class ResourceCloudStorage(CloudStorage):
         path = self.path_from_filename(id, filename)
         return self.get_url_from_path(path)
 
-
     @property
     def package(self):
         return model.Package.get(self.resource['package_id'])
@@ -476,7 +478,7 @@ class FileCloudStorage(CloudStorage):
             return self.upload_to_path(file_path)
         if self._clear and self.old_filename and not self.leave_files:
             old_file_path = self.path_from_filename(self.old_filename)
-            self.delete_object_from_path(old_file_path) 
+            self.delete_object_from_path(old_file_path)
 
     def get_url_from_filename(self, filename):
         """
