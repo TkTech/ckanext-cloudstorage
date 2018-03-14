@@ -3,8 +3,7 @@
 import os.path
 
 from pylons import c
-from pylons.i18n import _
-
+from pylons.i18n import _ 
 from ckan import logic, model
 from ckan.lib import base, uploader
 import ckan.lib.helpers as h
@@ -57,5 +56,5 @@ class StorageController(base.BaseController):
         '''Redirect static file requests to their location on cloudstorage.'''
         upload = uploader.get_uploader('notused')
         file_path = upload.path_from_filename(filename)
-        uploaded_url = upload.get_url_from_path(file_path)
+        uploaded_url = upload.get_url_from_path(file_path, use_secure_urls=False)
         h.redirect_to(uploaded_url)

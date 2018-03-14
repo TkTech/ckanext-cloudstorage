@@ -122,6 +122,33 @@ class TestResourceUploader(helpers.FunctionalTestBase):
         app.post(url, {'clear_uplaod': True, 'id': '', # empty id from the form
             'url': 'http://asdf', 'save': 'save'}, extra_environ=env)
 
+    @helpers.change_config('ckanext.cloudstorage.use_secure_urls', True)
+    @patch('ckanext.cloudstorage.storage.get_driver')
+    @patch('ckanext.cloudstorage.storage.CloudStorage.get_url_from_path')
+    def test_path_from_filename_uses_secure_url_when_config_is_set(self, get_url_from_path, get_driver):
+        dataset = factories.Dataset(name='my-dataset')
+        resource = factories.Resource(
+            package_id=dataset['id'],
+        )
+
+        uploader = ResourceCloudStorage(resource)
+        returned_path = uploader.get_url_from_filename(resource['id'], 'myfile.txt')
+        get_url_from_path.assert_called_once_with('resources/{}/myfile.txt'
+            .format(resource['id']), True)
+
+    @helpers.change_config('ckanext.cloudstorage.use_secure_urls', False)
+    @patch('ckanext.cloudstorage.storage.get_driver')
+    @patch('ckanext.cloudstorage.storage.CloudStorage.get_url_from_path')
+    def test_path_from_filename_uses_secure_url_when_option_is_false(self, get_url_from_path, get_driver):
+        dataset = factories.Dataset(name='my-dataset')
+        resource = factories.Resource(
+            package_id=dataset['id'],
+        )
+
+        uploader = ResourceCloudStorage(resource)
+        returned_path = uploader.get_url_from_filename(resource['id'], 'myfile.txt')
+        get_url_from_path.assert_called_once_with('resources/{}/myfile.txt'.format(resource['id']), False)
+
 
 class TestFileCloudStorage(helpers.FunctionalTestBase):
 

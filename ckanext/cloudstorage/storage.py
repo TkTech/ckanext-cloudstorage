@@ -232,7 +232,7 @@ class CloudStorage(object):
             # outstanding lease.
             return
 
-    def get_url_from_path(self, path):
+    def get_url_from_path(self, path, use_secure_urls):
         """
         Retrieve a publically accessible URL for the given path
 
@@ -247,7 +247,7 @@ class CloudStorage(object):
         """
         # If advanced azure features are enabled, generate a temporary
         # shared access link instead of simply redirecting to the file.
-        if self.use_secure_urls:
+        if use_secure_urls:
             if self.can_use_advanced_azure:
                 from azure.storage import blob as azure_blob
 
@@ -401,7 +401,7 @@ class ResourceCloudStorage(CloudStorage):
         :param filename: The resource filename
         """
         path = self.path_from_filename(id, filename)
-        return self.get_url_from_path(path)
+        return self.get_url_from_path(path, self.use_secure_urls)
 
     @property
     def package(self):
@@ -486,5 +486,8 @@ class FileCloudStorage(CloudStorage):
         :param filename: name of file
         """
         path = self.path_from_filename(filename)
-        return self.get_url_from_path(path)
+        # We don't want to use secure urls for normal file uploads.
+        # Doing so would cause assets caching issues such as the logo
+        # to be reloaded on every page load.
+        return self.get_url_from_path(path, use_secure_urls=False)
 
