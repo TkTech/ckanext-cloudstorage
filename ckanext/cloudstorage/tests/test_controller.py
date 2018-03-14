@@ -62,6 +62,7 @@ class TestStorageController(helpers.FunctionalTestBase):
         assert_equal(resource_show['url'], expected_url)
 
     @patch('ckanext.cloudstorage.storage.get_driver')
+    @helpers.change_config('ckan.site_url', 'http://localhost:5000')
     def test_resource_download_s3(self, get_driver):
         """A resource uploaded to S3 ckan be downloaded."""
         mock_driver = MagicMock(spec=google_driver, name='driver')
@@ -73,7 +74,7 @@ class TestStorageController(helpers.FunctionalTestBase):
         resource_show = demo.action.resource_show(id=resource['id'])
         resource_file_url = resource_show['url']
 
-        assert_equal(resource_file_url, u'{2}/dataset/{0}/resource/{1}/download/data.csv' \
+        assert_equal(resource_file_url, u'{2}/dataset/{0}/resource/{1}/download/data.csv'
             .format(resource['package_id'], resource['id'], 'http://localhost:5000'))
 
     @patch('ckanext.cloudstorage.storage.get_driver')
