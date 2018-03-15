@@ -444,7 +444,6 @@ class FileCloudStorage(CloudStorage):
         :param clear_field: Name of a boolean field which requests the upload
         to be deleted
         """
-
         self.url = data_dict.get(url_field, '')
         self._clear = data_dict.pop(clear_field, None)
         self.file_field = file_field
