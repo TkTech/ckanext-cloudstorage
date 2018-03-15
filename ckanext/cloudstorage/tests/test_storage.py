@@ -55,8 +55,6 @@ class TestResourceUploader(helpers.FunctionalTestBase):
         args, kwargs = container.upload_object_via_stream.call_args
 
         assert_equal(kwargs['object_name'], key)
-        print('driver method calls', mock_driver.method_calls)
-        print('container method calls', container.method_calls)
 
     @patch('ckanext.cloudstorage.storage.get_driver')
     def test_resource_upload_then_clear(self, get_driver):
@@ -132,7 +130,7 @@ class TestResourceUploader(helpers.FunctionalTestBase):
         )
 
         uploader = ResourceCloudStorage(resource)
-        returned_path = uploader.get_url_from_filename(resource['id'], 'myfile.txt')
+        uploader.get_url_from_filename(resource['id'], 'myfile.txt')
         get_url_from_path.assert_called_once_with('resources/{}/myfile.txt'
             .format(resource['id']), True)
 
@@ -146,7 +144,7 @@ class TestResourceUploader(helpers.FunctionalTestBase):
         )
 
         uploader = ResourceCloudStorage(resource)
-        returned_path = uploader.get_url_from_filename(resource['id'], 'myfile.txt')
+        uploader.get_url_from_filename(resource['id'], 'myfile.txt')
         get_url_from_path.assert_called_once_with('resources/{}/myfile.txt'.format(resource['id']), False)
 
 
@@ -253,3 +251,53 @@ class TestFileCloudStorage(helpers.FunctionalTestBase):
         uploader = FileCloudStorage('notused')
         url = uploader.get_object_public_url('file.png')
         assert_equal(url, 'https://storage.googleapis.com/test/storage/uploads/file.png')
+
+    @helpers.change_config('ckanext.cloudstorage.use_secure_urls', True)
+    @patch('ckanext.cloudstorage.storage.get_driver')
+    @patch('ckanext.cloudstorage.storage.CloudStorage.get_url_from_path')
+    def test_path_from_filename_uses_public_url_when_secure_urls_is_set(self, get_url_from_path, get_driver):
+        sysadmin = factories.Sysadmin(apikey='my-test-apikey')
+
+        file_path = os.path.join(os.path.dirname(__file__), 'data.csv')
+        file_name = 'image.png'
+
+        img_uploader = Uploader(file_name, file=open(file_path))
+
+        with patch('ckanext.cloudstorage.storage.datetime') as mock_date:
+            mock_date.datetime.utcnow.return_value = \
+                datetime.datetime(2001, 1, 29)
+            context = {'user': sysadmin['name']}
+            helpers.call_action('group_create', context=context,
+                                name='my-group',
+                                image_upload=img_uploader,
+                                image_url=file_name)
+
+        uploader = FileCloudStorage(None)
+
+        uploader.get_url_from_filename('image.png')
+        get_url_from_path.assert_called_once_with(u'storage/uploads/image.png', use_secure_urls=False)
+
+    @helpers.change_config('ckanext.cloudstorage.use_secure_urls', False)
+    @patch('ckanext.cloudstorage.storage.get_driver')
+    @patch('ckanext.cloudstorage.storage.CloudStorage.get_url_from_path')
+    def test_path_from_filename_uses_public_url_when_option_is_false(self, get_url_from_path, get_driver):
+        sysadmin = factories.Sysadmin(apikey='my-test-apikey')
+
+        file_path = os.path.join(os.path.dirname(__file__), 'data.csv')
+        file_name = 'image.png'
+
+        img_uploader = Uploader(file_name, file=open(file_path))
+
+        with patch('ckanext.cloudstorage.storage.datetime') as mock_date:
+            mock_date.datetime.utcnow.return_value = \
+                datetime.datetime(2001, 1, 29)
+            context = {'user': sysadmin['name']}
+            helpers.call_action('group_create', context=context,
+                                name='my-group',
+                                image_upload=img_uploader,
+                                image_url=file_name)
+
+        uploader = FileCloudStorage(None)
+
+        uploader.get_url_from_filename('image.png')
+        get_url_from_path.assert_called_once_with(u'storage/uploads/image.png', use_secure_urls=False)
