@@ -11,9 +11,12 @@ from pylons import config
 from ckan import model
 from ckan.lib import munge
 import ckan.plugins as p
+import logging
 
 from libcloud.storage.types import Provider, ObjectDoesNotExistError
 from libcloud.storage.providers import get_driver
+
+log = logging.getLogger(__name__)
 
 
 class CloudStorage(object):
@@ -204,9 +207,21 @@ class CloudStorage(object):
                 content_settings=content_settings
             )
         else:
+            extra = {}
+            if 'GOOGLE_STORAGE' in self.driver_name:
+                use_secure_urls = p.toolkit.asbool(
+                    config.get('ckanext.cloudstorage.use_secure_urls', False))
+                use_secure_urls_for_generics = p.toolkit.asbool(
+                        config.get('ckanext.cloudstorage.use_secure_urls_for_generics', False))
+                set_public_acl = use_secure_urls is True and use_secure_urls_for_generics is False
+                if set_public_acl:
+                    log.debug('set acl of new object to public-read for GOOGLE_STORAGE')
+                    extra['acl'] = 'public-read'
+
             self.container.upload_object_via_stream(
                 self.file_upload,
-                object_name=file_path
+                object_name=file_path,
+                extra=extra
             )
 
     def delete_object_from_path(self, file_path):

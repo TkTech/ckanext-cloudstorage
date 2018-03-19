@@ -2,13 +2,14 @@ import os
 from nose.tools import assert_equal, assert_true, assert_raises
 from mock import create_autospec, patch, MagicMock
 import datetime
-
 import ckanapi
 from webtest import Upload
 
 from ckan.tests import helpers, factories
 from ckan.plugins import toolkit
-from ckanext.cloudstorage.storage import ResourceCloudStorage, FileCloudStorage
+from ckanext.cloudstorage.storage import (
+    CloudStorage, ResourceCloudStorage, FileCloudStorage
+)
 
 from pylons import config
 
@@ -25,6 +26,41 @@ class Uploader(Upload):
     def __init__(self, *args, **kwargs):
         self.file = kwargs.pop('file')
         super(Uploader, self).__init__(*args, **kwargs)
+
+
+class TestCloudStorageBaseClass(helpers.FunctionalTestBase):
+
+    @helpers.change_config('ckanext.cloudstorage.driver', 'GOOGLE_STORAGE')
+    @helpers.change_config('ckanext.cloudstorage.use_secure_urls', False)
+    @patch('ckanext.cloudstorage.storage.CloudStorage.can_use_advanced_azure', False)
+    @patch('ckanext.cloudstorage.storage.CloudStorage.container')
+    @patch('ckanext.cloudstorage.storage.get_driver')
+    def test_upload_to_path_does_not_set_acl(self, get_driver, container):
+        uploader = CloudStorage()
+        uploader.file_upload = 'file_content'
+        uploader.upload_to_path('/some/path/file.txt')
+
+        container.upload_object_via_stream.assert_called_once_with(
+            'file_content', extra={}, object_name='/some/path/file.txt')
+
+    @helpers.change_config('ckanext.cloudstorage.driver', 'GOOGLE_STORAGE')
+    @helpers.change_config('ckanext.cloudstorage.use_secure_urls', True)
+    @helpers.change_config('ckanext.cloudstorage.use_secure_urls_for_generics', False)
+    @patch('ckanext.cloudstorage.storage.CloudStorage.can_use_advanced_azure', False)
+    @patch('ckanext.cloudstorage.storage.CloudStorage.container')
+    @patch('ckanext.cloudstorage.storage.get_driver')
+    def test_upload_to_path_sets_acl(self, get_driver, container):
+        uploader = CloudStorage()
+        uploader.file_upload = 'file_content'
+        uploader.upload_to_path('/some/path/file.txt')
+
+        container.upload_object_via_stream.assert_called_once_with(
+            'file_content',
+            extra={
+                'acl': 'public-read'
+            },
+            object_name='/some/path/file.txt'
+        )
 
 
 class TestResourceUploader(helpers.FunctionalTestBase):
