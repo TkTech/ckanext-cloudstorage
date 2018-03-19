@@ -73,13 +73,7 @@ class CloudStorage(object):
 
     @property
     def use_secure_urls(self):
-        """
-        `True` if ckanext-cloudstroage is configured to generate secure
-        one-time URLs to resources, `False` otherwise.
-        """
-        return p.toolkit.asbool(
-            config.get('ckanext.cloudstorage.use_secure_urls', False)
-        )
+        raise NotImplementedError('This property should be specified in subclass')
 
     @property
     def leave_files(self):
@@ -232,7 +226,7 @@ class CloudStorage(object):
             # outstanding lease.
             return
 
-    def get_url_from_path(self, path, use_secure_urls):
+    def get_url_from_path(self, path):
         """
         Retrieve a publically accessible URL for the given path
 
@@ -247,7 +241,7 @@ class CloudStorage(object):
         """
         # If advanced azure features are enabled, generate a temporary
         # shared access link instead of simply redirecting to the file.
-        if use_secure_urls:
+        if self.use_secure_urls:
             if self.can_use_advanced_azure:
                 from azure.storage import blob as azure_blob
 
@@ -365,6 +359,16 @@ class ResourceCloudStorage(CloudStorage):
             self.old_filename = old_resource.url
             resource['url_type'] = ''
 
+    @property
+    def use_secure_urls(self):
+        """
+        `True` if ckanext-cloudstroage is configured to generate secure
+        one-time URLs to resources, `False` otherwise.
+        """
+        return p.toolkit.asbool(
+            config.get('ckanext.cloudstorage.use_secure_urls', False)
+        )
+
     def path_from_filename(self, rid, filename):
         """
         Returns a bucket path for the given resource_id and filename.
@@ -401,7 +405,7 @@ class ResourceCloudStorage(CloudStorage):
         :param filename: The resource filename
         """
         path = self.path_from_filename(id, filename)
-        return self.get_url_from_path(path, self.use_secure_urls)
+        return self.get_url_from_path(path)
 
     @property
     def package(self):
@@ -420,6 +424,16 @@ class FileCloudStorage(CloudStorage):
         self.old_filename = old_filename
         if self.old_filename:
             self.old_filepath = self.path_from_filename(old_filename)
+
+    @property
+    def use_secure_urls(self):
+        """
+        `True` if ckanext-cloudstorage is configured to generate secure
+        one-time URLs to generic files, `False` otherwise.
+        """
+        return p.toolkit.asbool(
+            config.get('ckanext.cloudstorage.use_secure_urls_for_generics', False)
+        )
 
     def path_from_filename(self, filename):
         """
@@ -488,5 +502,5 @@ class FileCloudStorage(CloudStorage):
         # We don't want to use secure urls for normal file uploads.
         # Doing so would cause assets caching issues such as the logo
         # to be reloaded on every page load.
-        return self.get_url_from_path(path, use_secure_urls=False)
+        return self.get_url_from_path(path)
 
