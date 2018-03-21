@@ -35,7 +35,7 @@ To use the Google Storage driver the following driver options are required:
 
     {"key": "<service account ID>", "secret": "<path to SA private key>", "project": "<google project ID>"}
 
-*Note on secure URL's with Google Storage*
+**Note on secure URL's with Google Storage**
 With Google's lack of folder-level permissions the whole bucket will need to be made private when
 using secure urls. This will now affect generic file uploads as well. To still allow
 generic files to be public (`ckanext.cloudstorage.use_secure_urls_for_generics` is `False` by default)
@@ -102,8 +102,7 @@ cloudstorage will take care of the rest. Ex:
 
 1. You should disable public listing on the cloud service provider you're
    using, if supported.
-2. Currently, only resources are supported. This means that things like group
-   and organization images still use CKAN's local file storage.
+2. Currently, the migration tool only supports resources.
 
 # FAQ
 
