@@ -29,6 +29,20 @@ For most drivers, this is all you need:
 
     ckanext.cloudstorage.driver_options = {"key": "<your public key>", "secret": "<your secret key>"}
 
+## Google Storage
+
+To use the Google Storage driver the following driver options are required:
+
+    {"key": "<service account ID>", "secret": "<path to SA private key>", "project": "<google project ID>"}
+
+**Note on secure URL's with Google Storage**
+With Google's lack of folder-level permissions the whole bucket will need to be made private when
+using secure urls. This will now affect generic file uploads as well. To still allow
+generic files to be public (`ckanext.cloudstorage.use_secure_urls_for_generics` is `False` by default)
+we will set the ACL of a newly uploaded object to `public-read` when only
+`ckanext.cloudstorage.use_secure_urls` is activated. If you later decide to make the generic files private
+you will have to manually update the ACL on the already uploaded objects to make them private.
+
 # Support
 
 Most libcloud-based providers should work out of the box, but only those listed
@@ -39,6 +53,7 @@ below have been tested:
 | Azure    | YES | YES | YES (if `azure-storage` is installed) |
 | AWS S3   | YES | YES | YES (if `boto` is installed) |
 | Rackspace | YES | YES | No |
+| Google Storage | YES | YES | YES (if `google-cloud-storage` and `pycrypto` are installed) |
 
 # What are "Secure URLs"?
 
@@ -50,7 +65,17 @@ the resource. This means that the normal CKAN-provided access restrictions can
 apply to resources with no further effort on your part, but still get all the
 benefits of your CDN/blob storage.
 
+    # applies to resources
     ckanext.cloudstorage.use_secure_urls = 1
+
+    # applies to generic uploads eg. group images, logo
+    ckanext.cloudstorage.use_secure_urls_for_generics = 1
+
+The access permissions on the storage container used will have to be set accordingly to reflect
+these settings (if using Google Storage, see note on Google Storage use).
+
+`use_secure_urls_for_generics` is recommended to be off, to allow for caching of assets
+such as the logo.
 
 This option also enables multipart uploads, but you need to create database tables
 first. Run next command from extension folder:
@@ -77,8 +102,7 @@ cloudstorage will take care of the rest. Ex:
 
 1. You should disable public listing on the cloud service provider you're
    using, if supported.
-2. Currently, only resources are supported. This means that things like group
-   and organization images still use CKAN's local file storage.
+2. Currently, the migration tool only supports resources.
 
 # FAQ
 

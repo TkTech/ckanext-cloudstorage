@@ -1,13 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import os.path
+import logging
 
 from pylons import c
 from pylons.i18n import _
-
+from webob.exc import status_map
 from ckan import logic, model
 from ckan.lib import base, uploader
+from ckan.common import is_flask_request
 import ckan.lib.helpers as h
+
+log = logging.getLogger(__name__)
 
 
 class StorageController(base.BaseController):
@@ -52,3 +56,29 @@ class StorageController(base.BaseController):
             base.abort(404, _('No download is available'))
 
         h.redirect_to(uploaded_url)
+
+    def uploaded_file_redirect(self, upload_to, filename):
+        '''Redirect static file requests to their location on cloudstorage.'''
+        upload = uploader.get_uploader('notused')
+        file_path = upload.path_from_filename(filename)
+        uploaded_url = upload.get_url_from_path(file_path)
+
+        if upload.use_secure_urls:
+            h.redirect_to(uploaded_url)
+        else:
+            if is_flask_request():
+                raise NotImplementedError("Permanent redirect for flask \
+                    requests is not implemented yet")
+            else:
+                # We are manually performing a redirect for Pylons
+                # as this is the only way to set the caching headers
+                # to make a Permanently Moved cachable
+                # (see https://github.com/Pylons/pylons/blob/master/pylons/controllers/util.py#L218-L229)
+                exc = status_map[301]
+                raise exc(
+                    location=uploaded_url.encode('utf-8'),
+                    headers={
+                        "Cache-Control": "public, max-age=3600",
+                        "Pragma": "none"
+                    }
+                )
