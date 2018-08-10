@@ -259,7 +259,7 @@ class ResourceCloudStorage(CloudStorage):
                 # outstanding lease.
                 return
 
-    def get_url_from_filename(self, rid, filename):
+    def get_url_from_filename(self, rid, filename, content_type=None):
         """
         Retrieve a publically accessible URL for the given resource_id
         and filename.
@@ -271,6 +271,7 @@ class ResourceCloudStorage(CloudStorage):
 
         :param rid: The resource ID.
         :param filename: The resource filename.
+        :param content_type: Optionally a Content-Type header.
 
         :returns: Externally accessible URL or None.
         """
@@ -303,13 +304,16 @@ class ResourceCloudStorage(CloudStorage):
                 self.driver_options['key'],
                 self.driver_options['secret']
             )
-            return s3_connection.generate_url(
-                expires_in=60 * 60,
-                method='GET',
-                bucket=self.container_name,
-                query_auth=True,
-                key=path
-            )
+
+            generate_url_params = {"expires_in": 60 * 60,
+                                   "method": "GET",
+                                   "bucket": self.container_name,
+                                   "query_auth": True,
+                                   "key": path}
+            if content_type:
+                generate_url_params['headers'] = {"Content-Type": content_type}
+
+            return s3_connection.generate_url(**generate_url_params)
 
         # Find the object for the given key.
         obj = self.container.get_object(path)

@@ -44,7 +44,15 @@ class StorageController(base.BaseController):
             filename = os.path.basename(resource['url'])
 
         upload = uploader.get_resource_uploader(resource)
-        uploaded_url = upload.get_url_from_filename(resource['id'], filename)
+
+        # if the client requests with a Content-Type header (e.g. Text preview)
+        # we have to add the header to the signature
+        try:
+            content_type = getattr(c.pylons.request, "content_type", None)
+        except AttributeError:
+            content_type = None
+        uploaded_url = upload.get_url_from_filename(resource['id'], filename,
+                                                    content_type=content_type)
 
         # The uploaded file is missing for some reason, such as the
         # provider being down.
