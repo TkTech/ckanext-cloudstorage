@@ -301,13 +301,13 @@ class ResourceCloudStorage(CloudStorage):
             from boto.s3.connection import S3Connection
             s3_connection = S3Connection(
                 self.driver_options['key'],
-                self.driver_options['secret']
+                self.driver_options['secret'],
+                host='s3.ca-central-1.amazonaws.com'
             )
-            return s3_connection.generate_url(
+            return s3_connection.generate_url_sigv4(
                 expires_in=60 * 60,
                 method='GET',
                 bucket=self.container_name,
-                query_auth=True,
                 key=path
             )
 
