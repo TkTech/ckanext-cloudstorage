@@ -6,7 +6,6 @@ from docopt import docopt
 
 import ckanext.cloudstorage.utils as utils
 
-
 USAGE = """ckanext-cloudstorage
 
 Commands:
@@ -22,7 +21,6 @@ Usage:
 Options:
     -c=<config>       The CKAN configuration file.
 """
-
 
 
 class PasterCommand(CkanCommand):

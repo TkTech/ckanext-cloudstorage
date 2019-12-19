@@ -1,16 +1,20 @@
 # -*- coding: utf-8 -*-
-from ckan import plugins
 import os.path
-from ckanext.cloudstorage import storage
-from ckanext.cloudstorage import helpers
+
+from ckan import plugins
+
 import ckanext.cloudstorage.logic.action.multipart as m_action
 import ckanext.cloudstorage.logic.auth.multipart as m_auth
+
+from ckanext.cloudstorage import storage
+from ckanext.cloudstorage import helpers
 
 if plugins.toolkit.check_ckan_version("2.9"):
     from ckanext.cloudstorage.plugin.flask_plugin import MixinPlugin
     # from ckanext.cloudstorage.plugin.pylons_plugin import MixinPlugin
 else:
     from ckanext.cloudstorage.plugin.pylons_plugin import MixinPlugin
+
 
 class CloudStoragePlugin(MixinPlugin, plugins.SingletonPlugin):
     plugins.implements(plugins.IUploader)
@@ -30,25 +34,18 @@ class CloudStoragePlugin(MixinPlugin, plugins.SingletonPlugin):
     # ITemplateHelpers
 
     def get_helpers(self):
-        return dict(
-            cloudstorage_use_secure_urls=helpers.use_secure_urls
-        )
+        return dict(cloudstorage_use_secure_urls=helpers.use_secure_urls)
 
     def configure(self, config):
 
-        required_keys = (
-            'ckanext.cloudstorage.driver',
-            'ckanext.cloudstorage.driver_options',
-            'ckanext.cloudstorage.container_name'
-        )
+        required_keys = ('ckanext.cloudstorage.driver',
+                         'ckanext.cloudstorage.driver_options',
+                         'ckanext.cloudstorage.container_name')
 
         for rk in required_keys:
             if config.get(rk) is None:
                 raise RuntimeError(
-                    'Required configuration option {0} not found.'.format(
-                        rk
-                    )
-                )
+                    'Required configuration option {0} not found.'.format(rk))
 
     def get_resource_uploader(self, data_dict):
         # We provide a custom Resource uploader.
@@ -117,11 +114,7 @@ class CloudStoragePlugin(MixinPlugin, plugins.SingletonPlugin):
         # and all other files linked to this resource
         if not uploader.leave_files:
             upload_path = os.path.dirname(
-                uploader.path_from_filename(
-                    resource['id'],
-                    'fake-name'
-                )
-            )
+                uploader.path_from_filename(resource['id'], 'fake-name'))
 
             for old_file in uploader.container.iterate_objects():
                 if old_file.name.startswith(upload_path):

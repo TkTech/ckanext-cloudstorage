@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import os.path
 
-
 from ckan import logic, model
 import ckan.plugins.toolkit as tk
 from ckan.lib import base, uploader
@@ -128,7 +127,8 @@ def resource_download(id, resource_id, filename=None):
     except logic.NotFound:
         return base.abort(404, tk._('Resource not found'))
     except logic.NotAuthorized:
-        return base.abort(401, tk._('Unauthorized to read resource {0}'.format(id)))
+        return base.abort(401,
+                          tk._('Unauthorized to read resource {0}'.format(id)))
 
     # This isn't a file upload, so either redirect to the source
     # (if available) or error out.

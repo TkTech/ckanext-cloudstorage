@@ -24,12 +24,8 @@ else:
 
 class CloudStorage(object):
     def __init__(self):
-        self.driver = get_driver(
-            getattr(
-                Provider,
-                self.driver_name
-            )
-        )(**self.driver_options)
+        self.driver = get_driver(getattr(
+            Provider, self.driver_name))(**self.driver_options)
         self._container = None
 
     def path_from_filename(self, rid, filename):
@@ -42,8 +38,7 @@ class CloudStorage(object):
         """
         if self._container is None:
             self._container = self.driver.get_container(
-                container_name=self.container_name
-            )
+                container_name=self.container_name)
 
         return self._container
 
@@ -84,8 +79,7 @@ class CloudStorage(object):
         one-time URLs to resources, `False` otherwise.
         """
         return p.toolkit.asbool(
-            config.get('ckanext.cloudstorage.use_secure_urls', False)
-        )
+            config.get('ckanext.cloudstorage.use_secure_urls', False))
 
     @property
     def leave_files(self):
@@ -95,8 +89,7 @@ class CloudStorage(object):
         otherwise `False`.
         """
         return p.toolkit.asbool(
-            config.get('ckanext.cloudstorage.leave_files', False)
-        )
+            config.get('ckanext.cloudstorage.leave_files', False))
 
     @property
     def can_use_advanced_azure(self):
@@ -144,8 +137,7 @@ class CloudStorage(object):
         `False` otherwise.
         """
         return p.toolkit.asbool(
-            config.get('ckanext.cloudstorage.guess_mimetype', False)
-        )
+            config.get('ckanext.cloudstorage.guess_mimetype', False))
 
 
 class ResourceCloudStorage(CloudStorage):
@@ -186,11 +178,8 @@ class ResourceCloudStorage(CloudStorage):
             # Apparently, this is a created-but-not-commited resource whose
             # file upload has been canceled. We're copying the behaviour of
             # ckaenxt-s3filestore here.
-            old_resource = model.Session.query(
-                model.Resource
-            ).get(
-                resource['id']
-            )
+            old_resource = model.Session.query(model.Resource).get(
+                resource['id'])
 
             self.old_filename = old_resource.url
             resource['url_type'] = ''
@@ -202,11 +191,7 @@ class ResourceCloudStorage(CloudStorage):
         :param rid: The resource ID.
         :param filename: The unmunged resource filename.
         """
-        return os.path.join(
-            'resources',
-            rid,
-            munge.munge_filename(filename)
-        )
+        return os.path.join('resources', rid, munge.munge_filename(filename))
 
     def upload(self, id, max_size=10):
         """
@@ -221,33 +206,22 @@ class ResourceCloudStorage(CloudStorage):
                 from azure.storage.blob.models import ContentSettings
 
                 blob_service = azure_blob.BlockBlobService(
-                    self.driver_options['key'],
-                    self.driver_options['secret']
-                )
+                    self.driver_options['key'], self.driver_options['secret'])
                 content_settings = None
                 if self.guess_mimetype:
                     content_type, _ = mimetypes.guess_type(self.filename)
                     if content_type:
                         content_settings = ContentSettings(
-                            content_type=content_type
-                        )
+                            content_type=content_type)
                 return blob_service.create_blob_from_stream(
                     container_name=self.container_name,
-                    blob_name=self.path_from_filename(
-                        id,
-                        self.filename
-                    ),
+                    blob_name=self.path_from_filename(id, self.filename),
                     stream=self.file_upload,
-                    content_settings=content_settings
-                )
+                    content_settings=content_settings)
             else:
                 self.container.upload_object_via_stream(
                     self.file_upload,
-                    object_name=self.path_from_filename(
-                        id,
-                        self.filename
-                    )
-                )
+                    object_name=self.path_from_filename(id, self.filename))
 
         elif self._clear and self.old_filename and not self.leave_files:
             # This is only set when a previously-uploaded file is replace
@@ -255,12 +229,7 @@ class ResourceCloudStorage(CloudStorage):
             try:
                 self.container.delete_object(
                     self.container.get_object(
-                        self.path_from_filename(
-                            id,
-                            self.old_filename
-                        )
-                    )
-                )
+                        self.path_from_filename(id, self.old_filename)))
             except ObjectDoesNotExistError:
                 # It's possible for the object to have already been deleted, or
                 # for it to not yet exist in a committed state due to an
@@ -292,9 +261,7 @@ class ResourceCloudStorage(CloudStorage):
             from azure.storage import blob as azure_blob
 
             blob_service = azure_blob.BlockBlobService(
-                self.driver_options['key'],
-                self.driver_options['secret']
-            )
+                self.driver_options['key'], self.driver_options['secret'])
 
             return blob_service.make_blob_url(
                 container_name=self.container_name,
@@ -303,21 +270,19 @@ class ResourceCloudStorage(CloudStorage):
                     container_name=self.container_name,
                     blob_name=path,
                     expiry=datetime.utcnow() + timedelta(hours=1),
-                    permission=azure_blob.BlobPermissions.READ
-                )
-            )
+                    permission=azure_blob.BlobPermissions.READ))
         elif self.can_use_advanced_aws and self.use_secure_urls:
             from boto.s3.connection import S3Connection
-            s3_connection = S3Connection(
-                self.driver_options['key'],
-                self.driver_options['secret']
-            )
+            s3_connection = S3Connection(self.driver_options['key'],
+                                         self.driver_options['secret'])
 
-            generate_url_params = {"expires_in": 60 * 60,
-                                   "method": "GET",
-                                   "bucket": self.container_name,
-                                   "query_auth": True,
-                                   "key": path}
+            generate_url_params = {
+                "expires_in": 60 * 60,
+                "method": "GET",
+                "bucket": self.container_name,
+                "query_auth": True,
+                "key": path
+            }
             if content_type:
                 generate_url_params['headers'] = {"Content-Type": content_type}
 
@@ -335,11 +300,8 @@ class ResourceCloudStorage(CloudStorage):
             if 'S3' in self.driver_name:
                 return urlparse.urljoin(
                     'https://' + self.driver.connection.host,
-                    '{container}/{path}'.format(
-                        container=self.container_name,
-                        path=path
-                    )
-                )
+                    '{container}/{path}'.format(container=self.container_name,
+                                                path=path))
             # This extra 'url' property isn't documented anywhere, sadly.
             # See azure_blobs.py:_xml_to_object for more.
             elif 'url' in obj.extra:
