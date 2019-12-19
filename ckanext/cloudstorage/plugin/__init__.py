@@ -1,17 +1,19 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from ckan import plugins
-from routes.mapper import SubMapper
 import os.path
 from ckanext.cloudstorage import storage
 from ckanext.cloudstorage import helpers
 import ckanext.cloudstorage.logic.action.multipart as m_action
 import ckanext.cloudstorage.logic.auth.multipart as m_auth
 
+if plugins.toolkit.check_ckan_version("2.9"):
+    from ckanext.cloudstorage.plugin.flask_plugin import MixinPlugin
+    # from ckanext.cloudstorage.plugin.pylons_plugin import MixinPlugin
+else:
+    from ckanext.cloudstorage.plugin.pylons_plugin import MixinPlugin
 
-class CloudStoragePlugin(plugins.SingletonPlugin):
+class CloudStoragePlugin(MixinPlugin, plugins.SingletonPlugin):
     plugins.implements(plugins.IUploader)
-    plugins.implements(plugins.IRoutes, inherit=True)
     plugins.implements(plugins.IConfigurable)
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IActions)
@@ -22,8 +24,8 @@ class CloudStoragePlugin(plugins.SingletonPlugin):
     # IConfigurer
 
     def update_config(self, config):
-        plugins.toolkit.add_template_directory(config, 'templates')
-        plugins.toolkit.add_resource('fanstatic/scripts', 'cloudstorage-js')
+        plugins.toolkit.add_template_directory(config, '../templates')
+        plugins.toolkit.add_resource('../fanstatic/scripts', 'cloudstorage-js')
 
     # ITemplateHelpers
 
@@ -56,28 +58,6 @@ class CloudStoragePlugin(plugins.SingletonPlugin):
         # We don't provide misc-file storage (group images for example)
         # Returning None here will use the default Uploader.
         return None
-
-    def before_map(self, map):
-        sm = SubMapper(
-            map,
-            controller='ckanext.cloudstorage.controller:StorageController'
-        )
-
-        # Override the resource download controllers so we can do our
-        # lookup with libcloud.
-        with sm:
-            sm.connect(
-                'resource_download',
-                '/dataset/{id}/resource/{resource_id}/download',
-                action='resource_download'
-            )
-            sm.connect(
-                'resource_download',
-                '/dataset/{id}/resource/{resource_id}/download/{filename}',
-                action='resource_download'
-            )
-
-        return map
 
     # IActions
 

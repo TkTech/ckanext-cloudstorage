@@ -7,13 +7,19 @@ import urlparse
 from ast import literal_eval
 from datetime import datetime, timedelta
 
-from pylons import config
 from ckan import model
 from ckan.lib import munge
 import ckan.plugins as p
 
 from libcloud.storage.types import Provider, ObjectDoesNotExistError
 from libcloud.storage.providers import get_driver
+
+if p.toolkit.check_ckan_version("2.9"):
+    from werkzeug.datastructures import FileStorage as UploadedFileType
+    config = p.toolkit.config
+else:
+    from pylons import config
+    UploadedFileType = cgi.FieldStorage
 
 
 class CloudStorage(object):
@@ -162,9 +168,12 @@ class ResourceCloudStorage(CloudStorage):
         multipart_name = resource.pop('multipart_name', None)
 
         # Check to see if a file has been provided
-        if isinstance(upload_field_storage, cgi.FieldStorage):
+        if isinstance(upload_field_storage, UploadedFileType):
             self.filename = munge.munge_filename(upload_field_storage.filename)
-            self.file_upload = upload_field_storage.file
+            if p.toolkit.check_ckan_version("2.9"):
+                self.file_upload = upload_field_storage.stream
+            else:
+                self.file_upload = upload_field_storage.file
             resource['url'] = self.filename
             resource['url_type'] = 'upload'
         elif multipart_name and self.can_use_advanced_aws:
@@ -222,7 +231,6 @@ class ResourceCloudStorage(CloudStorage):
                         content_settings = ContentSettings(
                             content_type=content_type
                         )
-
                 return blob_service.create_blob_from_stream(
                     container_name=self.container_name,
                     blob_name=self.path_from_filename(

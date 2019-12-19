@@ -3,7 +3,6 @@
 import logging
 import datetime
 
-from pylons import config
 from sqlalchemy.orm.exc import NoResultFound
 import ckan.model as model
 import ckan.lib.helpers as h
@@ -11,6 +10,12 @@ import ckan.plugins.toolkit as toolkit
 
 from ckanext.cloudstorage.storage import ResourceCloudStorage
 from ckanext.cloudstorage.model import MultipartUpload, MultipartPart
+
+if toolkit.check_ckan_version("2.9"):
+    config = toolkit.config
+else:
+    from pylons import config
+
 
 log = logging.getLogger(__name__)
 
