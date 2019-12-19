@@ -99,7 +99,7 @@ class CloudStoragePlugin(MixinPlugin, plugins.SingletonPlugin):
         # we don't want to change original item from resources, just in case
         # someone will use it in another `before_delete`. So, let's copy it
         # and add `clear_upload` flag
-        res_dict = dict(res.items() + [('clear_upload', True)])
+        res_dict = dict(list(res.items()) + [('clear_upload', True)])
 
         uploader = self.get_resource_uploader(res_dict)
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
 from ckan.lib.cli import CkanCommand
 from docopt import docopt
 

@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from future import standard_library
+standard_library.install_aliases()
+from builtins import object
 import cgi
 import mimetypes
 import os.path
-import urlparse
+import urllib.parse
 from ast import literal_eval
 from datetime import datetime, timedelta
 
@@ -298,7 +301,7 @@ class ResourceCloudStorage(CloudStorage):
             return self.driver.get_object_cdn_url(obj)
         except NotImplementedError:
             if 'S3' in self.driver_name:
-                return urlparse.urljoin(
+                return urllib.parse.urljoin(
                     'https://' + self.driver.connection.host,
                     '{container}/{path}'.format(container=self.container_name,
                                                 path=path))

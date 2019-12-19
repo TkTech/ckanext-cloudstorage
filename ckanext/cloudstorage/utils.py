@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 import os.path
 
 from ckan import logic, model
@@ -79,7 +80,7 @@ def migrate(path, single_id):
 
             resources[ckan_res_id] = os.path.join(root, file_)
 
-    for i, resource in enumerate(resources.iteritems(), 1):
+    for i, resource in enumerate(iter(resources.items()), 1):
         resource_id, file_path = resource
         print('[{i}/{count}] Working on {id}'.format(i=i,
                                                      count=len(resources),

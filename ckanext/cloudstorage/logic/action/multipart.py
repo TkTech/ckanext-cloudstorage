@@ -133,10 +133,7 @@ def initiate_multipart(context, data_dict):
             upload_id = resp.object.find(
                 '{%s}UploadId' % resp.object.nsmap[None]).text
         except AttributeError:
-            upload_id_list = filter(
-                lambda e: e.tag.endswith('UploadId'),
-                resp.object.getchildren()
-            )
+            upload_id_list = [e for e in resp.object.getchildren() if e.tag.endswith('UploadId')]
             upload_id = upload_id_list[0].text
         upload_object = MultipartUpload(upload_id, id, res_name, size, name, user_id)
 
