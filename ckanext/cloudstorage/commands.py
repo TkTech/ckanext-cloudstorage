@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
 from ckan.lib.cli import CkanCommand
 from docopt import docopt
 
@@ -24,31 +25,30 @@ Options:
 """
 
 
-
 class PasterCommand(CkanCommand):
-    summary = 'ckanext-cloudstorage maintence utilities.'
+    summary = "ckanext-cloudstorage maintence utilities."
     usage = USAGE
 
     def command(self):
         self._load_config()
         args = docopt(USAGE, argv=self.args)
 
-        if args['fix-cors']:
+        if args["fix-cors"]:
             _fix_cors(args)
-        elif args['migrate']:
+        elif args["migrate"]:
             _migrate(args)
-        elif args['initdb']:
+        elif args["initdb"]:
             _initdb()
 
 
 def _migrate(args):
-    path = args['<path_to_storage>']
-    single_id = args['<resource_id>']
+    path = args["<path_to_storage>"]
+    single_id = args["<resource_id>"]
     utils.migrate(path, single_id)
 
 
 def _fix_cors(args):
-    msg, _ = utils.fix_cors(args['<domains>'])
+    msg, _ = utils.fix_cors(args["<domains>"])
     print(msg)
 
 

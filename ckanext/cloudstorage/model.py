@@ -9,7 +9,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
-    Numeric
+    Numeric,
 )
 from datetime import datetime
 import ckan.model.meta as meta
@@ -28,7 +28,7 @@ def create_tables():
 
 
 class MultipartPart(Base, DomainObject):
-    __tablename__ = 'cloudstorage_multipart_part'
+    __tablename__ = "cloudstorage_multipart_part"
 
     def __init__(self, n, etag, upload):
         self.n = n
@@ -38,17 +38,19 @@ class MultipartPart(Base, DomainObject):
     n = Column(Integer, primary_key=True)
     etag = Column(UnicodeText, primary_key=True)
     upload_id = Column(
-        UnicodeText, ForeignKey('cloudstorage_multipart_upload.id'),
-        primary_key=True
+        UnicodeText,
+        ForeignKey("cloudstorage_multipart_upload.id"),
+        primary_key=True,
     )
     upload = relationship(
-        'MultipartUpload',
-        backref=backref('parts', cascade='delete, delete-orphan'),
-        single_parent=True)
+        "MultipartUpload",
+        backref=backref("parts", cascade="delete, delete-orphan"),
+        single_parent=True,
+    )
 
 
 class MultipartUpload(Base, DomainObject):
-    __tablename__ = 'cloudstorage_multipart_upload'
+    __tablename__ = "cloudstorage_multipart_upload"
 
     def __init__(self, id, resource_id, name, size, original_name, user_id):
         self.id = id
@@ -60,9 +62,7 @@ class MultipartUpload(Base, DomainObject):
 
     @classmethod
     def resource_uploads(cls, resource_id):
-        query = meta.Session.query(cls).filter_by(
-            resource_id=resource_id
-        )
+        query = meta.Session.query(cls).filter_by(resource_id=resource_id)
         return query
 
     id = Column(UnicodeText, primary_key=True)
