@@ -16,6 +16,16 @@ from libcloud.storage.types import Provider, ObjectDoesNotExistError
 from libcloud.storage.providers import get_driver
 
 
+from werkzeug.datastructures import FileStorage as FlaskFileStorage
+ALLOWED_UPLOAD_TYPES = (cgi.FieldStorage, FlaskFileStorage)
+
+
+def _get_underlying_file(wrapper):
+    if isinstance(wrapper, FlaskFileStorage):
+        return wrapper.stream
+    return wrapper.file
+
+
 class CloudStorage(object):
     def __init__(self):
         self.driver = get_driver(
@@ -162,9 +172,9 @@ class ResourceCloudStorage(CloudStorage):
         multipart_name = resource.pop('multipart_name', None)
 
         # Check to see if a file has been provided
-        if isinstance(upload_field_storage, cgi.FieldStorage):
+        if isinstance(upload_field_storage, (ALLOWED_UPLOAD_TYPES)):
             self.filename = munge.munge_filename(upload_field_storage.filename)
-            self.file_upload = upload_field_storage.file
+            self.file_upload = _get_underlying_file(upload_field_storage)
             resource['url'] = self.filename
             resource['url_type'] = 'upload'
         elif multipart_name and self.can_use_advanced_aws:
