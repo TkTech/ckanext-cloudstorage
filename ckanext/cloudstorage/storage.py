@@ -244,8 +244,14 @@ class ResourceCloudStorage(CloudStorage):
                     content_settings=content_settings
                 )
             else:
+                file_upload = self.file_upload
+                # in Python3 libcloud iterates over uploaded file,
+                # while it's wrappend into non-iterator. So, pick real
+                # file-object and give it to cloudstorage
+                if six.PY3:
+                    file_upload = file_upload._file
                 self.container.upload_object_via_stream(
-                    self.file_upload,
+                    file_upload,
                     object_name=self.path_from_filename(
                         id,
                         self.filename
