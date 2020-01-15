@@ -5,13 +5,12 @@ standard_library.install_aliases()
 from builtins import object
 import cgi
 import mimetypes
-import os.path
+import os
 import urllib.parse
 from ast import literal_eval
 from datetime import datetime, timedelta
 
 import six
-
 from ckan import model
 from ckan.lib import munge
 import ckan.plugins as p
@@ -250,8 +249,8 @@ class ResourceCloudStorage(CloudStorage):
                 # in Python3 libcloud iterates over uploaded file,
                 # while it's wrappend into non-iterator. So, pick real
                 # file-object and give it to cloudstorage
-                if six.PY3:
-                    file_upload = file_upload._file
+                # if six.PY3:
+                    # file_upload = file_upload._file
                 self.container.upload_object_via_stream(
                     file_upload,
                     object_name=self.path_from_filename(
@@ -319,20 +318,21 @@ class ResourceCloudStorage(CloudStorage):
             )
         elif self.can_use_advanced_aws and self.use_secure_urls:
             from boto.s3.connection import S3Connection
+            os.environ['S3_USE_SIGV4'] = 'True'
             s3_connection = S3Connection(
                 self.driver_options['key'],
-                self.driver_options['secret']
+                self.driver_options['secret'],
+                # FIXME: while testing, set to local host
+                host='s3.ap-southeast-2.amazonaws.com'
             )
 
             generate_url_params = {"expires_in": 60 * 60,
                                    "method": "GET",
                                    "bucket": self.container_name,
-                                   "query_auth": True,
                                    "key": path}
             if content_type:
                 generate_url_params['headers'] = {"Content-Type": content_type}
-
-            return s3_connection.generate_url(**generate_url_params)
+            return s3_connection.generate_url_sigv4(**generate_url_params)
 
         # Find the object for the given key.
         obj = self.container.get_object(path)

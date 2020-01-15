@@ -4,7 +4,7 @@ main:
   extra:
     preload:
       - base/main
+      - vendor/fileupload
   contents:
     - vendor/jquery-widget.js
-    - vendor/file-upload.js
     - cloudstorage-multipart-upload.js
