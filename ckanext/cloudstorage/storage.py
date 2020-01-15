@@ -10,6 +10,8 @@ import urllib.parse
 from ast import literal_eval
 from datetime import datetime, timedelta
 
+import six
+
 from ckan import model
 from ckan.lib import munge
 import ckan.plugins as p
