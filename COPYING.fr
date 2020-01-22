@@ -1,6 +1,6 @@
 Licence MIT
 
-(c) Droit d'auteur – Gouvernement du Canada, 2017
+(c) Droit d'auteur – Tyler Kennedy <tk@tkte.ch>, 2020
 
 La présente autorise toute personne d'obtenir gratuitement une copie du
 présent logiciel et des documents connexes (le « logiciel »), de traiter le
