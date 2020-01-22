@@ -309,10 +309,11 @@ class ResourceCloudStorage(CloudStorage):
                 )
             )
         elif self.can_use_advanced_aws and self.use_secure_urls:
-            from boto.s3.connection import S3Connection
+            from boto.s3.connection import S3Connection, NoHostProvided
             s3_connection = S3Connection(
                 self.driver_options['key'],
-                self.driver_options['secret']
+                self.driver_options['secret'],
+                host=self.driver_options.get('endpoint_url', NoHostProvided),
             )
 
             generate_url_params = {"expires_in": 60 * 60,
