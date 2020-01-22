@@ -1,7 +1,7 @@
 # ckanext-cloudstorage
 
-Implements support for using S3, Azure, or any of 30+ providers supported by
-[libcloud][] to [CKAN][].
+Implements support for using S3, Azure, or any of 15 different storage
+providers supported by [libcloud][] to [CKAN][].
 
 # Setup
 
