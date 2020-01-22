@@ -125,12 +125,17 @@ def _migrate(args):
                 uploader.upload(resource['id'])
             except Exception as e:
                 failed.append(resource_id)
-                print(u'\tError of type {0} during upload: {1}'.format(type(e), e))
+                print(u'\tError of type {0} during upload: {1}'.format(
+                    type(e),
+                    e
+                ))
 
     if failed:
         log_file = tempfile.NamedTemporaryFile(delete=False)
         log_file.file.writelines(failed)
-        print(u'ID of all failed uploads are saved to `{0}`'.format(log_file.name))
+        print(u'ID of all failed uploads are saved to `{0}`'.format(
+            log_file.name
+        ))
 
 
 def _fix_cors(args):

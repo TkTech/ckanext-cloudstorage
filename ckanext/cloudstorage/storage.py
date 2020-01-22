@@ -37,7 +37,7 @@ class CloudStorage(object):
         self._container = None
 
     def path_from_filename(self, rid, filename):
-        raise NotImplemented
+        raise NotImplementedError()
 
     @property
     def container(self):

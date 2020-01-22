@@ -140,9 +140,17 @@ def initiate_multipart(context, data_dict):
                 resp.object.getchildren()
             )
             upload_id = upload_id_list[0].text
-        upload_object = MultipartUpload(upload_id, id, res_name, size, name, user_id)
 
+        upload_object = MultipartUpload(
+            upload_id,
+            id,
+            res_name,
+            size,
+            name,
+            user_id
+        )
         upload_object.save()
+
     return upload_object.as_dict()
 
 
@@ -178,10 +186,10 @@ def finish_multipart(context, data_dict):
     parts into single file
 
     :param context:
-    :param data_dict: dict with required key `uploadId` - id of Multipart Upload that should be finished
+    :param data_dict: dict with required key `uploadId` - id of Multipart
+                      Upload that should be finished
     :returns: None
     :rtype: NoneType
-
     """
 
     h.check_access('cloudstorage_finish_multipart', data_dict)
