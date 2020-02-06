@@ -172,7 +172,8 @@ class ResourceCloudStorage(CloudStorage):
         multipart_name = resource.pop('multipart_name', None)
 
         # Check to see if a file has been provided
-        if isinstance(upload_field_storage, UploadedFileType):
+        if bool(upload_field_storage) and isinstance(
+                upload_field_storage, UploadedFileType):
             self.filename = munge.munge_filename(upload_field_storage.filename)
             if p.toolkit.check_ckan_version("2.9"):
                 self.file_upload = upload_field_storage.stream
