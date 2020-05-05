@@ -116,16 +116,16 @@ def initiate_multipart(context, data_dict):
                 resource_id=id):
             _delete_multipart(old_upload, uploader)
 
-        _rindex = res_name.rfind('/')
-        if ~_rindex:
-            try:
-                name_prefix = res_name[:_rindex]
-                for cloud_object in uploader.container.iterate_objects():
-                    if cloud_object.name.startswith(name_prefix):
-                        log.info('Removing cloud object: %s' % cloud_object)
-                        cloud_object.delete()
-            except Exception as e:
-                log.exception('[delete from cloud] %s' % e)
+        # _rindex = res_name.rfind('/')
+        # if ~_rindex:
+        #     try:
+        #         name_prefix = res_name[:_rindex]
+        #         for cloud_object in uploader.container.iterate_objects():
+        #             if cloud_object.name.startswith(name_prefix):
+        #                 log.info('Removing cloud object: %s' % cloud_object)
+        #                 cloud_object.delete()
+        #     except Exception as e:
+        #         log.exception('[delete from cloud] %s' % e)
 
         upload_object = MultipartUpload(
             uploader.driver._initiate_multipart(
@@ -152,10 +152,10 @@ def upload_multipart(context, data_dict):
 
     uploader = ResourceCloudStorage({})
     upload = model.Session.query(MultipartUpload).get(upload_id)
-    if six.PY2:
-        data = part_content.file.read()
-    else:
+    if toolkit.check_ckan_version('2.8'):
         data = part_content.stream.read()
+    else:
+        data = part_content.file.read()
     resp = uploader.driver.connection.request(
         _get_object_url(
             uploader, upload.name

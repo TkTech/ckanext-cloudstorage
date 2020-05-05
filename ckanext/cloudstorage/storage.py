@@ -1,16 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from future import standard_library
-standard_library.install_aliases()
-from builtins import object
 import cgi
 import mimetypes
 import os
-import urllib.parse
+from six.moves.urllib.parse import urljoin
 from ast import literal_eval
 from datetime import datetime, timedelta
 
-import six
 from ckan import model
 from ckan.lib import munge
 import ckan.plugins as p
@@ -345,7 +341,7 @@ class ResourceCloudStorage(CloudStorage):
             return self.driver.get_object_cdn_url(obj)
         except NotImplementedError:
             if 'S3' in self.driver_name:
-                return urllib.parse.urljoin(
+                return urljoin(
                     'https://' + self.driver.connection.host,
                     '{container}/{path}'.format(
                         container=self.container_name,
