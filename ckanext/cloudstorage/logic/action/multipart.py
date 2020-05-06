@@ -115,17 +115,19 @@ def initiate_multipart(context, data_dict):
         for old_upload in model.Session.query(MultipartUpload).filter_by(
                 resource_id=id):
             _delete_multipart(old_upload, uploader)
-
-        # _rindex = res_name.rfind('/')
-        # if ~_rindex:
-        #     try:
-        #         name_prefix = res_name[:_rindex]
-        #         for cloud_object in uploader.container.iterate_objects():
-        #             if cloud_object.name.startswith(name_prefix):
-        #                 log.info('Removing cloud object: %s' % cloud_object)
-        #                 cloud_object.delete()
-        #     except Exception as e:
-        #         log.exception('[delete from cloud] %s' % e)
+        _rindex = res_name.rfind('/')
+        if ~_rindex:
+            try:
+                name_prefix = res_name[:_rindex]
+                old_objects = uploader.driver.iterate_container_objects(
+                    uploader.container,
+                    name_prefix
+                )
+                for obj in old_objects:
+                    log.info('Removing cloud object: %s' % obj)
+                    obj.delete()
+            except Exception as e:
+                log.exception('[delete from cloud] %s' % e)
 
         upload_object = MultipartUpload(
             uploader.driver._initiate_multipart(
@@ -210,7 +212,7 @@ def finish_multipart(context, data_dict):
         pass
     uploader.driver._commit_multipart(
         container=uploader.container,
-	object_name=upload.name,
+        object_name=upload.name,
         upload_id=upload_id,
         chunks=chunks
     )

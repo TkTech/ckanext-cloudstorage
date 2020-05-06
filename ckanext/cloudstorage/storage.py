@@ -33,7 +33,7 @@ class CloudStorage(object):
         self._container = None
 
     def path_from_filename(self, rid, filename):
-        raise NotImplemented
+        raise NotImplementedError
 
     @property
     def container(self):
@@ -126,6 +126,10 @@ class CloudStorage(object):
         """
         # Are we even using AWS?
         if 'S3' in self.driver_name:
+            if 'host' not in self.driver_options:
+                # newer libcloud versions(must-use for python3)
+                # requires host for secure URLs
+                return False
             try:
                 # Yes? Is the boto package available?
                 import boto
@@ -319,8 +323,7 @@ class ResourceCloudStorage(CloudStorage):
             s3_connection = S3Connection(
                 self.driver_options['key'],
                 self.driver_options['secret'],
-                # FIXME: while testing, set to local host
-                host='s3.ap-southeast-2.amazonaws.com'
+                host=self.driver_options['host']
             )
 
             generate_url_params = {"expires_in": 60 * 60,
