@@ -3,15 +3,14 @@ import os.path
 
 from ckan import plugins
 
-import ckanext.cloudstorage.logic.action.multipart as m_action
-import ckanext.cloudstorage.logic.auth.multipart as m_auth
+from ckanext.cloudstorage.logic.action import get_actions
+from ckanext.cloudstorage.logic.auth import get_auth_functions
 
 from ckanext.cloudstorage import storage
 from ckanext.cloudstorage import helpers
 
 if plugins.toolkit.check_ckan_version("2.9"):
     from ckanext.cloudstorage.plugin.flask_plugin import MixinPlugin
-    # from ckanext.cloudstorage.plugin.pylons_plugin import MixinPlugin
 else:
     from ckanext.cloudstorage.plugin.pylons_plugin import MixinPlugin
 
@@ -36,6 +35,8 @@ class CloudStoragePlugin(MixinPlugin, plugins.SingletonPlugin):
     def get_helpers(self):
         return dict(cloudstorage_use_secure_urls=helpers.use_secure_urls)
 
+    # IConfigurable
+
     def configure(self, config):
 
         required_keys = ('ckanext.cloudstorage.driver',
@@ -46,6 +47,8 @@ class CloudStoragePlugin(MixinPlugin, plugins.SingletonPlugin):
             if config.get(rk) is None:
                 raise RuntimeError(
                     'Required configuration option {0} not found.'.format(rk))
+
+    # IUploader
 
     def get_resource_uploader(self, data_dict):
         # We provide a custom Resource uploader.
@@ -59,26 +62,12 @@ class CloudStoragePlugin(MixinPlugin, plugins.SingletonPlugin):
     # IActions
 
     def get_actions(self):
-        return {
-            'cloudstorage_initiate_multipart': m_action.initiate_multipart,
-            'cloudstorage_upload_multipart': m_action.upload_multipart,
-            'cloudstorage_finish_multipart': m_action.finish_multipart,
-            'cloudstorage_abort_multipart': m_action.abort_multipart,
-            'cloudstorage_check_multipart': m_action.check_multipart,
-            'cloudstorage_clean_multipart': m_action.clean_multipart,
-        }
+        return get_actions()
 
     # IAuthFunctions
 
     def get_auth_functions(self):
-        return {
-            'cloudstorage_initiate_multipart': m_auth.initiate_multipart,
-            'cloudstorage_upload_multipart': m_auth.upload_multipart,
-            'cloudstorage_finish_multipart': m_auth.finish_multipart,
-            'cloudstorage_abort_multipart': m_auth.abort_multipart,
-            'cloudstorage_check_multipart': m_auth.check_multipart,
-            'cloudstorage_clean_multipart': m_auth.clean_multipart,
-        }
+        return get_auth_functions()
 
     # IResourceController
 
@@ -116,6 +105,10 @@ class CloudStoragePlugin(MixinPlugin, plugins.SingletonPlugin):
             upload_path = os.path.dirname(
                 uploader.path_from_filename(resource['id'], 'fake-name'))
 
-            for old_file in uploader.container.iterate_objects():
-                if old_file.name.startswith(upload_path):
-                    old_file.delete()
+            old_files = uploader.driver.iterate_container_objects(
+                uploader.container,
+                upload_path
+            )
+
+            for old_file in old_files:
+                old_file.delete()

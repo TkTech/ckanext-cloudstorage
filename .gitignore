@@ -5,6 +5,7 @@ syntax: glob
 *.swo
 .DS_Store
 ckan.egg-info/*
+ckanext_cloudstorage.egg-info/*
 sandbox/*
 dist
 
