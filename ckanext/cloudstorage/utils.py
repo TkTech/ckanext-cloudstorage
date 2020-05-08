@@ -18,6 +18,7 @@ from ckanext.cloudstorage.storage import (CloudStorage, ResourceCloudStorage)
 class FakeFileStorage(cgi.FieldStorage):
     def __init__(self, fp, filename):
         self.file = fp
+        self.stream = fp
         self.filename = filename
 
 

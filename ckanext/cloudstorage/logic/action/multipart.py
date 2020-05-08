@@ -3,7 +3,7 @@
 import logging
 import datetime
 
-import six
+import libcloud.security
 
 from sqlalchemy.orm.exc import NoResultFound
 import ckan.model as model
@@ -18,7 +18,6 @@ if toolkit.check_ckan_version("2.9"):
 else:
     from pylons import config
 
-import libcloud.security
 libcloud.security.VERIFY_SSL_CERT = True
 
 log = logging.getLogger(__name__)
@@ -98,9 +97,8 @@ def initiate_multipart(context, data_dict):
 
     h.check_access('cloudstorage_initiate_multipart', data_dict)
     id, name, size = toolkit.get_or_bust(data_dict, ['id', 'name', 'size'])
-    user_id = None
-    if context['auth_user_obj']:
-        user_id = context['auth_user_obj'].id
+    user_obj = model.User.get(context['user'])
+    user_id = user_obj.id if user_obj else None
 
     uploader = ResourceCloudStorage({'multipart_name': name})
     res_name = uploader.path_from_filename(id, name)
@@ -115,6 +113,8 @@ def initiate_multipart(context, data_dict):
         for old_upload in model.Session.query(MultipartUpload).filter_by(
                 resource_id=id):
             _delete_multipart(old_upload, uploader)
+
+        # Find and remove previous file from this resourve
         _rindex = res_name.rfind('/')
         if ~_rindex:
             try:

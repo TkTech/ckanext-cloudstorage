@@ -37,7 +37,7 @@ below have been tested:
 | Provider | Uploads | Downloads | Secure URLs (private resources) |
 | --- | --- | --- | --- |
 | Azure    | YES | YES | YES (if `azure-storage` is installed) |
-| AWS S3   | YES | YES | YES (if `boto` is installed) |
+| AWS S3   | YES | YES | YES (if `boto` is installed and `host` key added to `driver_options`) |
 | Rackspace | YES | YES | No |
 
 # What are "Secure URLs"?

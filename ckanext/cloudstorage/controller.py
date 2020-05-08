@@ -1,13 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import os.path
 
-from pylons import c
-from pylons.i18n import _
-
-from ckan import logic, model
-from ckan.lib import base, uploader
-import ckan.lib.helpers as h
+from ckan.lib import base
 import ckanext.cloudstorage.utils as utils
 
 

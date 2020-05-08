@@ -7,5 +7,6 @@ def use_secure_urls():
     return all([
         ResourceCloudStorage.use_secure_urls.fget(None),
         # Currently implemented just AWS version
-        'S3' in ResourceCloudStorage.driver_name.fget(None)
+        'S3' in ResourceCloudStorage.driver_name.fget(None),
+        'host' in ResourceCloudStorage.driver_options.fget(None),
     ])
