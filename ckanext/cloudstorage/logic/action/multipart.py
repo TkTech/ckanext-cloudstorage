@@ -12,6 +12,7 @@ import ckan.plugins.toolkit as toolkit
 
 from ckanext.cloudstorage.storage import ResourceCloudStorage
 from ckanext.cloudstorage.model import MultipartUpload, MultipartPart
+from werkzeug.datastructures import FileStorage as FlaskFileStorage
 
 if toolkit.check_ckan_version("2.9"):
     config = toolkit.config
@@ -21,6 +22,12 @@ else:
 libcloud.security.VERIFY_SSL_CERT = True
 
 log = logging.getLogger(__name__)
+
+
+def _get_underlying_file(wrapper):
+    if isinstance(wrapper, FlaskFileStorage):
+        return wrapper.stream
+    return wrapper.file
 
 
 def _get_max_multipart_lifetime():
@@ -167,10 +174,10 @@ def upload_multipart(context, data_dict):
             'partNumber': part_number
         },
         method='PUT',
-        data=data,
         headers={
             'Content-Length': len(data)
-        }
+        },
+        data=bytearray(_get_underlying_file(part_content).read())
     )
     if resp.status != 200:
         raise toolkit.ValidationError('Upload failed: part %s' % part_number)

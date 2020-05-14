@@ -22,6 +22,16 @@ else:
     UploadedFileType = cgi.FieldStorage
 
 
+from werkzeug.datastructures import FileStorage as FlaskFileStorage
+ALLOWED_UPLOAD_TYPES = (cgi.FieldStorage, FlaskFileStorage)
+
+
+def _get_underlying_file(wrapper):
+    if isinstance(wrapper, FlaskFileStorage):
+        return wrapper.stream
+    return wrapper.file
+
+
 class CloudStorage(object):
     def __init__(self):
         self.driver = get_driver(
@@ -172,8 +182,7 @@ class ResourceCloudStorage(CloudStorage):
         multipart_name = resource.pop('multipart_name', None)
 
         # Check to see if a file has been provided
-        if bool(upload_field_storage) and isinstance(
-                upload_field_storage, UploadedFileType):
+        if isinstance(upload_field_storage, (ALLOWED_UPLOAD_TYPES)):
             self.filename = munge.munge_filename(upload_field_storage.filename)
             if p.toolkit.check_ckan_version("2.9"):
                 self.file_upload = upload_field_storage.stream
