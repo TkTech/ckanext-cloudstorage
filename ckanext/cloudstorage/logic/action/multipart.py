@@ -161,10 +161,7 @@ def upload_multipart(context, data_dict):
 
     uploader = ResourceCloudStorage({})
     upload = model.Session.query(MultipartUpload).get(upload_id)
-    if toolkit.check_ckan_version('2.8'):
-        data = part_content.stream.read()
-    else:
-        data = part_content.file.read()
+    data = _get_underlying_file(part_content).read()
     resp = uploader.driver.connection.request(
         _get_object_url(
             uploader, upload.name
@@ -177,7 +174,7 @@ def upload_multipart(context, data_dict):
         headers={
             'Content-Length': len(data)
         },
-        data=bytearray(_get_underlying_file(part_content).read())
+        data=data
     )
     if resp.status != 200:
         raise toolkit.ValidationError('Upload failed: part %s' % part_number)

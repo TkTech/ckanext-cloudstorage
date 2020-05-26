@@ -184,10 +184,7 @@ class ResourceCloudStorage(CloudStorage):
         # Check to see if a file has been provided
         if isinstance(upload_field_storage, (ALLOWED_UPLOAD_TYPES)):
             self.filename = munge.munge_filename(upload_field_storage.filename)
-            if p.toolkit.check_ckan_version("2.9"):
-                self.file_upload = upload_field_storage.stream
-            else:
-                self.file_upload = upload_field_storage.file
+            self.file_upload = _get_underlying_file(upload_field_storage)
             resource['url'] = self.filename
             resource['url_type'] = 'upload'
         elif multipart_name and self.can_use_advanced_aws:
