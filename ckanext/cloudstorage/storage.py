@@ -182,8 +182,10 @@ class ResourceCloudStorage(CloudStorage):
         multipart_name = resource.pop('multipart_name', None)
 
         # Check to see if a file has been provided
-        if isinstance(upload_field_storage, (ALLOWED_UPLOAD_TYPES)):
+        if isinstance(upload_field_storage, (ALLOWED_UPLOAD_TYPES)) and \
+           upload_field_storage.filename:
             self.filename = munge.munge_filename(upload_field_storage.filename)
+
             self.file_upload = _get_underlying_file(upload_field_storage)
             resource['url'] = self.filename
             resource['url_type'] = 'upload'
