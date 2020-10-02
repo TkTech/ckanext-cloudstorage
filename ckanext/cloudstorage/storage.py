@@ -343,7 +343,10 @@ class ResourceCloudStorage(CloudStorage):
             return s3_connection.generate_url_sigv4(**generate_url_params)
 
         # Find the object for the given key.
-        obj = self.container.get_object(path)
+        try:
+            obj = self.container.get_object(path)
+        except ObjectDoesNotExistError:
+            return
         if obj is None:
             return
 
