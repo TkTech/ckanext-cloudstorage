@@ -3,6 +3,7 @@
 import cgi
 import mimetypes
 import os
+import six
 from six.moves.urllib.parse import urljoin
 from ast import literal_eval
 from datetime import datetime, timedelta
@@ -359,7 +360,7 @@ class ResourceCloudStorage(CloudStorage):
                     'https://' + self.driver.connection.host,
                     '{container}/{path}'.format(
                         container=self.container_name,
-                        path=path
+                        path=six.ensure_str(path)
                     )
                 )
             # This extra 'url' property isn't documented anywhere, sadly.
