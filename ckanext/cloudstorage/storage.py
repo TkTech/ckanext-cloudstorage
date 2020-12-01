@@ -335,6 +335,9 @@ class ResourceCloudStorage(CloudStorage):
                 host=self.driver_options['host']
             )
 
+            if 'region_name' in self.driver_options.keys():
+                s3_connection.auth_region_name = self.driver_options['region_name']
+
             generate_url_params = {"expires_in": 60 * 60,
                                    "method": "GET",
                                    "bucket": self.container_name,
