@@ -33,12 +33,28 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
             this._file = $('#field-image-upload');
             this._url = $('#field-image-url');
             this._save = $('[name=save]');
+            this
+            <a href="javascript:;" class="btn btn-danger btn-remove-url" title="Remove">Remove</a>
             this._id = $('input[name=id]');
             this._progress = $('<div>', {
                 class: 'hide controls progress progress-striped active'
             });
+
+            this._upload_message = $('<div>Please wait until upload finishes</div>');
+            this._upload_message.addClass("upload-message")
+            this._upload_message.css('margin-top', '10px');
+            this._upload_message.css('line-height', '0px');
+            this._upload_message.css('text-align', 'center');
+            this._upload_message.css('text-align', 'center');
+            this._progress.append(this._upload_message);
+
             this._bar = $('<div>', {class:'bar'});
+            this._bar.css('height', '100%');
+            this._bar.css('width', '0%');
+            this._bar.css('margin-top', '-10px');
+            this._bar.css('background-color', '#30b9ba');
             this._progress.append(this._bar);
+
             this._progress.insertAfter(this._url.parent().parent());
             this._resumeBtn = $('<a>', {class: 'hide btn btn-info controls'}).insertAfter(
                 this._progress).text('Resume Upload');
@@ -62,6 +78,9 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
             this._save.on('click', this._onSaveClick);
 
             this._onCheckExistingMultipart('choose');
+
+            (function blink() { $('.upload-message').fadeOut(500).fadeIn(500, blink); })();
+
         },
 
         _onChunkUploaded: function () {
@@ -143,6 +162,7 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
         },
 
         _onUploadFileSubmit: function (event, data) {
+            console.log("_onUploadFileSubmit")
             if (!this._uploadId) {
                 this._onDisableSave(false);
                 this.sandbox.notify(
@@ -155,6 +175,8 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
 
             this._setProgressType('info', this._progress);
             this._progress.show('slow');
+            $(window).scrollTop(this._form.scrollTop);
+            this._progress.removeClass('hide');
         },
 
         _onGenerateAdditionalData: function (form) {
@@ -185,6 +207,7 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
         },
 
         _onFileUploadAdd: function (event, data) {
+            console.log("_onFileUploadAdd")
             this._setProgress(0, this._bar);
             var file = data.files[0];
             var target = $(event.target);
@@ -214,6 +237,8 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
                 });
 
                 this._progress.show('slow');
+                this._progress.removeClass('hide');
+                $(window).scrollTop(this._form.scrollTop);
                 this._onDisableResumeBtn();
                 this._save.trigger('click');
 
@@ -238,6 +263,8 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
         },
 
         _onSaveClick: function(event, pass) {
+            console.log("_onSaveClick")
+
             if (pass || !window.FileList || !this._file || !this._file.val()) {
                 return;
             }
@@ -264,6 +291,7 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
         },
 
         _onSaveForm: function() {
+            console.log("_onSaveForm")
             var file = this._file[0].files[0];
             var self = this;
             var formData = this._form.serializeArray().reduce(
@@ -310,6 +338,8 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
 
 
         _onPerformUpload: function(file) {
+            console.log("_onPerformUpload")
+            console.log("_onPerformUpload")
             var id = this._id.val();
             var self = this;
             if (this._uploadId === null)
@@ -329,7 +359,7 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
         },
 
         _onPrepareUpload: function(file, id) {
-
+            console.log("_onPrepareUpload")
             return $.ajax({
                 method: 'POST',
                 url: this.sandbox.client.url('/api/action/cloudstorage_initiate_multipart'),
@@ -427,6 +457,7 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
         },
 
         _onHandleError: function (msg) {
+            console.log("_onHandleError: " + msg)
             this.sandbox.notify(
                 'Error',
                 msg,
