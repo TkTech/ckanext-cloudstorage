@@ -221,13 +221,12 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
                     this._onCleanUpload();
                     this.sandbox.notify(
                         'Mismatch file',
-                        'You are trying to upload wrong file. Cancel previous upload first.',
+                        'You are trying to upload wrong file. Select '+ this._uploadName + ' or delete this resource and create a new one.',
                         'error'
                     );
                     event.preventDefault();
                     throw 'Wrong file';
                 }
-
 
                 var loaded = chunkSize * this._uploadedParts;
 
