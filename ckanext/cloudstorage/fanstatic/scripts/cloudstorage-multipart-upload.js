@@ -33,8 +33,6 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
             this._file = $('#field-image-upload');
             this._url = $('#field-image-url');
             this._save = $('[name=save]');
-            this
-            <a href="javascript:;" class="btn btn-danger btn-remove-url" title="Remove">Remove</a>
             this._id = $('input[name=id]');
             this._progress = $('<div>', {
                 class: 'hide controls progress progress-striped active'
@@ -150,10 +148,13 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
                     }
                 })
                 .show();
+             this._resumeBtn.removeClass('hide')
+
         },
 
         _onDisableResumeBtn: function () {
             this._resumeBtn.hide();
+            this._resumeBtn.addClass('hide')
         },
 
         _onUploadFail: function (e, data) {
@@ -251,6 +252,7 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
 
             target.fileupload('option', 'maxChunkSize', chunkSize);
 
+
             this.el.off('multipartstarted.cloudstorage');
             this.el.on('multipartstarted.cloudstorage', function () {
                 data.submit();
@@ -262,8 +264,14 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
             this._setProgress(progress, this._bar);
         },
 
+        _onRemoveClick: function(event, pass) {
+            console.log("_onRemoveClick");
+            //this._progress.hide('fast');
+            //this._progress.addClass('hide');
+        },
+
         _onSaveClick: function(event, pass) {
-            console.log("_onSaveClick")
+            console.log("_onSaveClick");
 
             if (pass || !window.FileList || !this._file || !this._file.val()) {
                 return;
@@ -280,10 +288,12 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
             } else {
                 try{
                     this._onDisableSave(true);
+                    this._onDisableRemove(true);
                     this._onSaveForm();
                 } catch(error){
                     console.log(error);
                     this._onDisableSave(false);
+                    this._onDisableRemove(false);
                 }
             }
 
@@ -339,7 +349,9 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
 
         _onPerformUpload: function(file) {
             console.log("_onPerformUpload")
-            console.log("_onPerformUpload")
+
+            $('.btn-remove-url').on('click', this._onRemoveClick);
+
             var id = this._id.val();
             var self = this;
             if (this._uploadId === null)
@@ -373,7 +385,8 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
         },
 
         _onAbortUpload: function(id) {
-            var self = this;
+           console.log("_onAbortUpload")
+           var self = this;
             this.sandbox.client.call(
                 'POST',
                 'cloudstorage_abort_multipart',
@@ -392,6 +405,7 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
         },
 
         _onFinishUpload: function() {
+            console.log("_onFinishUpload")
             var self = this;
             var data_dict = {
                 'uploadId': this._uploadId,
@@ -405,6 +419,7 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
                 function (data) {
 
                     self._progress.hide('fast');
+                    self._progress.addClass('hide');
                     self._onDisableSave(false);
 
                     if (self._resourceId && self._packageId){
@@ -443,7 +458,18 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
         },
 
         _onDisableSave: function (value) {
+            console.log("_onDisableSave: " + value);
             this._save.attr('disabled', value);
+        },
+
+       _onDisableRemove: function(value) {
+            console.log("_onDisableRemove: " + value);
+            $('.btn-remove-url').attr('disabled', value);
+            if (value) {
+                $('.btn-remove-url').off();
+            } else {
+                $('.btn-remove-url').on();
+            }
         },
 
         _setProgress: function (progress, bar) {
