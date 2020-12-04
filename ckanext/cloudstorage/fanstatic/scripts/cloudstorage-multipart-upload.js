@@ -163,7 +163,6 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
         },
 
         _onUploadFileSubmit: function (event, data) {
-            console.log("_onUploadFileSubmit")
             if (!this._uploadId) {
                 this._onDisableSave(false);
                 this.sandbox.notify(
@@ -208,7 +207,6 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
         },
 
         _onFileUploadAdd: function (event, data) {
-            console.log("_onFileUploadAdd")
             this._setProgress(0, this._bar);
             var file = data.files[0];
             var target = $(event.target);
@@ -263,15 +261,7 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
             this._setProgress(progress, this._bar);
         },
 
-        _onRemoveClick: function(event, pass) {
-            console.log("_onRemoveClick");
-            //this._progress.hide('fast');
-            //this._progress.addClass('hide');
-        },
-
         _onSaveClick: function(event, pass) {
-            console.log("_onSaveClick");
-
             if (pass || !window.FileList || !this._file || !this._file.val()) {
                 return;
             }
@@ -300,7 +290,6 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
         },
 
         _onSaveForm: function() {
-            console.log("_onSaveForm")
             var file = this._file[0].files[0];
             var self = this;
             var formData = this._form.serializeArray().reduce(
@@ -347,10 +336,6 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
 
 
         _onPerformUpload: function(file) {
-            console.log("_onPerformUpload")
-
-            $('.btn-remove-url').on('click', this._onRemoveClick);
-
             var id = this._id.val();
             var self = this;
             if (this._uploadId === null)
@@ -370,7 +355,6 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
         },
 
         _onPrepareUpload: function(file, id) {
-            console.log("_onPrepareUpload")
             return $.ajax({
                 method: 'POST',
                 url: this.sandbox.client.url('/api/action/cloudstorage_initiate_multipart'),
@@ -384,7 +368,6 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
         },
 
         _onAbortUpload: function(id) {
-           console.log("_onAbortUpload")
            var self = this;
             this.sandbox.client.call(
                 'POST',
@@ -404,7 +387,6 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
         },
 
         _onFinishUpload: function() {
-            console.log("_onFinishUpload")
             var self = this;
             var data_dict = {
                 'uploadId': this._uploadId,
@@ -457,12 +439,10 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
         },
 
         _onDisableSave: function (value) {
-            console.log("_onDisableSave: " + value);
             this._save.attr('disabled', value);
         },
 
        _onDisableRemove: function(value) {
-            console.log("_onDisableRemove: " + value);
             $('.btn-remove-url').attr('disabled', value);
             if (value) {
                 $('.btn-remove-url').off();
@@ -482,7 +462,6 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
         },
 
         _onHandleError: function (msg) {
-            console.log("_onHandleError: " + msg)
             this.sandbox.notify(
                 'Error',
                 msg,
