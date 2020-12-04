@@ -211,6 +211,22 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
             var file = data.files[0];
             var target = $(event.target);
 
+            if (this.options.maxSize && (! isNaN(parseInt(this.options.maxSize)))){
+               var max_size = parseInt(this.options.maxSize);
+               var file_size_gb = file.size/1073741824
+               if (file_size_gb > max_size) {
+                    this._file.val('');
+                    this._onCleanUpload();
+                    this.sandbox.notify(
+                        'Too large file:',
+                        'You selected a file larger than '+ max_size + 'GB. Contact support for an alternative upload method or select a smaller one.',
+                        'error'
+                    );
+                    event.preventDefault();
+                    throw 'Too large file';
+                }
+            }
+
             var chunkSize = this._countChunkSize(file.size, target.fileupload('option', 'maxChunkSize'));
 
             if (this._uploadName && this._uploadSize && this._uploadedParts !== null) {
@@ -246,9 +262,7 @@ ckan.module('cloudstorage-multipart-upload', function($, _) {
 
             }
 
-
             target.fileupload('option', 'maxChunkSize', chunkSize);
-
 
             this.el.off('multipartstarted.cloudstorage');
             this.el.on('multipartstarted.cloudstorage', function () {

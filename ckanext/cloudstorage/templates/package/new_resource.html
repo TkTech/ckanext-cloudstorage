@@ -2,7 +2,7 @@
 
 
 {% block form %}
-
-     {% snippet 'cloudstorage/snippets/multipart_module.html', pkg_name=pkg_name, parent=super %}
+     {% set max_size = config.get('ckanext.cloudstorage.max_upload_size_gb') %}
+     {% snippet 'cloudstorage/snippets/multipart_module.html', pkg_name=pkg_name, parent=super, max_size=max_size %}
 
 {% endblock %}
