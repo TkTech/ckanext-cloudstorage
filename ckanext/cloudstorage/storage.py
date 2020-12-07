@@ -7,13 +7,14 @@ import six
 from six.moves.urllib.parse import urljoin
 from ast import literal_eval
 from datetime import datetime, timedelta
-
+import traceback
 from ckan import model
 from ckan.lib import munge
 import ckan.plugins as p
 
 from libcloud.storage.types import Provider, ObjectDoesNotExistError
 from libcloud.storage.providers import get_driver
+import libcloud.common.types as types
 
 if p.toolkit.check_ckan_version("2.9"):
     from werkzeug.datastructures import FileStorage as UploadedFileType
@@ -186,7 +187,6 @@ class ResourceCloudStorage(CloudStorage):
         if isinstance(upload_field_storage, (ALLOWED_UPLOAD_TYPES)) and \
            upload_field_storage.filename:
             self.filename = munge.munge_filename(upload_field_storage.filename)
-
             self.file_upload = _get_underlying_file(upload_field_storage)
             resource['url'] = self.filename
             resource['url_type'] = 'upload'
@@ -255,19 +255,32 @@ class ResourceCloudStorage(CloudStorage):
                     content_settings=content_settings
                 )
             else:
-                file_upload = self.file_upload
-                # in Python3 libcloud iterates over uploaded file,
-                # while it's wrappend into non-iterator. So, pick real
-                # file-object and give it to cloudstorage
-                # if six.PY3:
-                    # file_upload = file_upload._file
-                self.container.upload_object_via_stream(
-                    file_upload,
-                    object_name=self.path_from_filename(
-                        id,
-                        self.filename
-                    )
-                )
+                try:
+                    file_upload = self.file_upload
+                    # in Python3 libcloud iterates over uploaded file,
+                    # while it's wrappend into non-iterator. So, pick real
+                    # file-object and give it to cloudstorage
+                    #if six.PY3:
+                    #    file_upload = file_upload._file
+
+                    # self.container.upload_object_via_stream(
+                    #     file_upload,
+                    #     object_name=self.path_from_filename(
+                    #         id,
+                    #         self.filename
+                    #     )
+                    # )
+
+                    # FIX: replaced call with a simpler version
+                    with open(file_upload.name, 'rb') as iterator:
+                        self.container.upload_object_via_stream(iterator=iterator,
+                                                                object_name=self.path_from_filename(id, self.filename))
+                except ValueError as v:
+                    print(traceback.format_exc())
+                    raise v
+                except types.InvalidCredsError as err:
+                    print('EXCEPTION: {0}'.format(err))
+                    raise err
 
         elif self._clear and self.old_filename and not self.leave_files:
             # This is only set when a previously-uploaded file is replace
