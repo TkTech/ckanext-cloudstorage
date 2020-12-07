@@ -279,7 +279,7 @@ class ResourceCloudStorage(CloudStorage):
                     print(traceback.format_exc())
                     raise v
                 except types.InvalidCredsError as err:
-                    print('EXCEPTION: {0}'.format(err))
+                    print(traceback.format_exc())
                     raise err
 
         elif self._clear and self.old_filename and not self.leave_files:
