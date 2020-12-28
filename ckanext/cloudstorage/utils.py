@@ -2,6 +2,7 @@
 from __future__ import print_function
 import os.path
 
+import six
 from ckan import logic, model
 import ckan.plugins.toolkit as tk
 from ckan.lib import base, uploader
@@ -15,11 +16,14 @@ from ckanext.cloudstorage.model import (create_tables, drop_tables)
 from ckanext.cloudstorage.storage import (CloudStorage, ResourceCloudStorage)
 
 
-class FakeFileStorage(cgi.FieldStorage):
-    def __init__(self, fp, filename):
-        self.file = fp
-        self.stream = fp
-        self.filename = filename
+if tk.check_ckan_version("2.9"):
+    from werkzeug.datastructures import FileStorage as FakeFileStorage
+else:
+    class FakeFileStorage(cgi.FieldStorage):
+        def __init__(self, fp, filename):
+            self.file = fp
+            self.stream = fp
+            self.filename = filename
 
 
 def initdb():
@@ -109,7 +113,7 @@ def migrate(path, single_id):
 
     if failed:
         log_file = tempfile.NamedTemporaryFile(delete=False)
-        log_file.file.writelines(failed)
+        log_file.file.writelines([six.ensure_binary(l) for l in failed])
         print(u'ID of all failed uploads are saved to `{0}`'.format(
             log_file.name))
 
