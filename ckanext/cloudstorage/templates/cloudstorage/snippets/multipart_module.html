@@ -1,6 +1,7 @@
 <div
     data-module="cloudstorage-multipart-upload"
     data-module-cloud='S3'
+    {# prevent type-guessing inside JS module by prefixing ID with underscore #}
     data-module-package-id="_{{ pkg_name }}"
    >
     {{ parent() }}
