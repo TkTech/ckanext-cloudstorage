@@ -28,14 +28,5 @@ def migrate(path, resource):
     """
     utils.migrate(path, resource)
 
-
-@cloudstorage.command()
-def initdb():
-    """Reinitalize database tables.
-    """
-    utils.initdb()
-    click.secho("DB tables are reinitialized", fg="green")
-
-
 def get_commands():
     return [cloudstorage]

@@ -54,7 +54,12 @@ benefits of your CDN/blob storage.
 
 This option also enables multipart uploads, but you need to create database tables
 first. Run next command from extension folder:
-    `paster cloudstorage initdb -c /etc/ckan/default/production.ini `
+
+    paster cloudstorage initdb -c /etc/ckan/default/production.ini
+
+For CKAN>=2.9 use the following command instead:
+
+    ckan -c /etc/ckan/default/production.ini ` db upgrade -p cloudstorage
 
 With that feature you can use `cloudstorage_clean_multipart` action, which is available
 only for sysadmins. After executing, all unfinished multipart uploads, older than 7 days,
