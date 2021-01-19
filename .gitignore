@@ -17,5 +17,6 @@ tmp/*
 solr_runtime/*
 fl_notes.txt
 *.ini
+!alembic.ini
 .noseids
 *~
