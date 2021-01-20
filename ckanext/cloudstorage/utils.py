@@ -90,7 +90,6 @@ def migrate(path, single_id):
         print('[{i}/{count}] Working on {id}'.format(i=i,
                                                      count=len(resources),
                                                      id=resource_id))
-
         try:
             resource = lc.action.resource_show(id=resource_id)
         except NotFound:
@@ -114,8 +113,8 @@ def migrate(path, single_id):
     if failed:
         log_file = tempfile.NamedTemporaryFile(delete=False)
         log_file.file.writelines([six.ensure_binary(l) for l in failed])
-        print(u'ID of all failed uploads are saved to `{0}`'.format(
-            log_file.name))
+        print(u'ID of all failed uploads are saved to `{0}`: {1}'.format(
+            log_file.name, failed))
 
 
 def resource_download(id, resource_id, filename=None):

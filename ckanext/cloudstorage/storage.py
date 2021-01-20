@@ -7,30 +7,55 @@ import six
 from six.moves.urllib.parse import urljoin
 from ast import literal_eval
 from datetime import datetime, timedelta
-
+import traceback
 from ckan import model
 from ckan.lib import munge
 import ckan.plugins as p
+import hashlib
+import binascii
 
 from libcloud.storage.types import Provider, ObjectDoesNotExistError
 from libcloud.storage.providers import get_driver
+import libcloud.common.types as types
 
 if p.toolkit.check_ckan_version("2.9"):
     from werkzeug.datastructures import FileStorage as UploadedFileType
+
     config = p.toolkit.config
 else:
     from pylons import config
+
     UploadedFileType = cgi.FieldStorage
 
-
 from werkzeug.datastructures import FileStorage as FlaskFileStorage
+
 ALLOWED_UPLOAD_TYPES = (cgi.FieldStorage, FlaskFileStorage)
+AWS_UPLOAD_PART_SIZE = 5 * 1024 * 1024
 
 
 def _get_underlying_file(wrapper):
     if isinstance(wrapper, FlaskFileStorage):
         return wrapper.stream
     return wrapper.file
+
+
+def _md5sum(source_path):
+    block_count = 0
+    block = True
+    md5string = b''
+    with open(source_path, "rb") as f:
+        while block:
+            block = f.read(AWS_UPLOAD_PART_SIZE)
+            if block:
+                block_count += 1
+                hash_obj = hashlib.md5()
+                hash_obj.update(block)
+                md5string = md5string + binascii.unhexlify(hash_obj.hexdigest())
+            else:
+                break
+    hash_obj = hashlib.md5()
+    hash_obj.update(md5string)
+    return hash_obj.hexdigest() + "-" + str(block_count)
 
 
 class CloudStorage(object):
@@ -184,9 +209,8 @@ class ResourceCloudStorage(CloudStorage):
 
         # Check to see if a file has been provided
         if isinstance(upload_field_storage, (ALLOWED_UPLOAD_TYPES)) and \
-           upload_field_storage.filename:
+                upload_field_storage.filename:
             self.filename = munge.munge_filename(upload_field_storage.filename)
-
             self.file_upload = _get_underlying_file(upload_field_storage)
             resource['url'] = self.filename
             resource['url_type'] = 'upload'
@@ -255,19 +279,57 @@ class ResourceCloudStorage(CloudStorage):
                     content_settings=content_settings
                 )
             else:
-                file_upload = self.file_upload
-                # in Python3 libcloud iterates over uploaded file,
-                # while it's wrappend into non-iterator. So, pick real
-                # file-object and give it to cloudstorage
-                # if six.PY3:
-                    # file_upload = file_upload._file
-                self.container.upload_object_via_stream(
-                    file_upload,
-                    object_name=self.path_from_filename(
-                        id,
-                        self.filename
-                    )
-                )
+                try:
+                    file_upload = self.file_upload
+                    # in Python3 libcloud iterates over uploaded file,
+                    # while it's wrappend into non-iterator. So, pick real
+                    # file-object and give it to cloudstorage
+                    # if six.PY3:
+                    #    file_upload = file_upload._file
+
+                    # self.container.upload_object_via_stream(
+                    #     file_upload,
+                    #     object_name=self.path_from_filename(
+                    #         id,
+                    #         self.filename
+                    #     )
+                    # )
+
+                    # check if already uploaded
+                    object_name = self.path_from_filename(id, self.filename)
+                    try:
+                        cloud_object = self.container.get_object(object_name=object_name)
+                        print("\t Object found, checking size {0}: {1}".format(object_name, cloud_object.size))
+                        file_size = os.path.getsize(file_upload.name)
+                        print("\t - File size {0}: {1}".format(file_upload.name, file_size))
+                        if file_size == int(cloud_object.size):
+                            print("\t Size fits, checking hash {0}: {1}".format(object_name, cloud_object.hash))
+                            hash_file = hashlib.md5(open(file_upload.name, 'rb').read()).hexdigest()
+                            print("\t - File hash {0}: {1}".format(file_upload.name, hash_file))
+                            # basic hash
+                            if hash_file == cloud_object.hash:
+                                print("\t => File found, matching hash, skipping upload")
+                                return
+                            # multipart hash
+                            multi_hash_file = _md5sum(file_upload.name)
+                            print("\t - File multi hash {0}: {1}".format(file_upload.name, multi_hash_file))
+                            if multi_hash_file == cloud_object.hash:
+                                print("\t => File found, matching hash, skipping upload")
+                                return
+                        print("\t Resource found in the cloud but outdated, uploading")
+                    except ObjectDoesNotExistError:
+                        print("\t Resource not found in the cloud, uploading")
+
+                    # FIX: replaced call with a simpler version
+                    with open(file_upload.name, 'rb') as iterator:
+                        self.container.upload_object_via_stream(iterator=iterator, object_name=object_name)
+                    print("\t => UPLOADED {0}: {1}".format(file_upload.name, object_name))
+                except ValueError as v:
+                    print(traceback.format_exc())
+                    raise v
+                except types.InvalidCredsError as err:
+                    print(traceback.format_exc())
+                    raise err
 
         elif self._clear and self.old_filename and not self.leave_files:
             # This is only set when a previously-uploaded file is replace
@@ -334,6 +396,9 @@ class ResourceCloudStorage(CloudStorage):
                 self.driver_options['secret'],
                 host=self.driver_options['host']
             )
+
+            if 'region_name' in self.driver_options.keys():
+                s3_connection.auth_region_name = self.driver_options['region_name']
 
             generate_url_params = {"expires_in": 60 * 60,
                                    "method": "GET",

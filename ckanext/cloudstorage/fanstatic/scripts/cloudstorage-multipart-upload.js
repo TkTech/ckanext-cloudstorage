@@ -39,6 +39,15 @@ ckan.module("cloudstorage-multipart-upload", function($, _) {
       this._progress = $("<div>", {
         class: "progress"
       });
+
+      this._upload_message = $("<div>Please wait until upload finishes</div>");
+      this._upload_message.addClass("upload-message");
+      this._upload_message.css("margin-top", "10px");
+      this._upload_message.css("line-height", "0px");
+      this._upload_message.css("text-align", "center");
+      this._upload_message.css("text-align", "center");
+      this._progress.append(this._upload_message);
+
       this._bar = $("<div>", {
         class: "progress-bar progress-bar-striped progress-bar-animated active"
       });
@@ -72,6 +81,11 @@ ckan.module("cloudstorage-multipart-upload", function($, _) {
       this._save.on("click", this._onSaveClick);
 
       this._onCheckExistingMultipart("choose");
+      (function blink() {
+        $(".upload-message")
+          .fadeOut(500)
+          .fadeIn(500, blink);
+      })();
     },
 
     _onChunkUploaded: function() {
@@ -198,6 +212,24 @@ ckan.module("cloudstorage-multipart-upload", function($, _) {
       var file = data.files[0];
       var target = $(event.target);
 
+      if (this.options.maxSize && !isNaN(parseInt(this.options.maxSize))) {
+        var max_size = parseInt(this.options.maxSize);
+        var file_size_gb = file.size / 1073741824;
+        if (file_size_gb > max_size) {
+          this._file.val("");
+          this._onCleanUpload();
+          this.sandbox.notify(
+            "Too large file:",
+            "You selected a file larger than " +
+              max_size +
+              "GB. Contact support for an alternative upload method or select a smaller one.",
+            "error"
+          );
+          event.preventDefault();
+          throw "Too large file";
+        }
+      }
+
       var chunkSize = this._countChunkSize(
         file.size,
         target.fileupload("option", "maxChunkSize")
@@ -213,7 +245,9 @@ ckan.module("cloudstorage-multipart-upload", function($, _) {
           this._onCleanUpload();
           this.sandbox.notify(
             "Mismatch file",
-            "You are trying to upload wrong file. Cancel previous upload first.",
+            "You are trying to upload wrong file. Select " +
+              this._uploadName +
+              " or delete this resource and create a new one.",
             "error"
           );
           event.preventDefault();
@@ -266,10 +300,12 @@ ckan.module("cloudstorage-multipart-upload", function($, _) {
         try {
           $("html, body").animate({ scrollTop: 0 }, "50");
           this._onDisableSave(true);
+          this._onDisableRemove(true);
           this._onSaveForm();
         } catch (error) {
           console.error(error);
           this._onDisableSave(false);
+          this._onDisableRemove(false);
         }
       }
 
@@ -414,7 +450,14 @@ ckan.module("cloudstorage-multipart-upload", function($, _) {
     _onDisableSave: function(value) {
       this._save.attr("disabled", value);
     },
-
+    _onDisableRemove: function(value) {
+      $(".btn-remove-url").attr("disabled", value);
+      if (value) {
+        $(".btn-remove-url").off();
+      } else {
+        $(".btn-remove-url").on();
+      }
+    },
     _setProgress: function(progress, bar) {
       bar.css("width", progress + "%");
     },
