@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import cgi
 import mimetypes
+import logging
 import os
 import six
 from six.moves.urllib.parse import urljoin
@@ -29,6 +30,8 @@ else:
 
 from werkzeug.datastructures import FileStorage as FlaskFileStorage
 
+log = logging.getLogger(__name__)
+
 ALLOWED_UPLOAD_TYPES = (cgi.FieldStorage, FlaskFileStorage)
 AWS_UPLOAD_PART_SIZE = 5 * 1024 * 1024
 
@@ -39,20 +42,20 @@ def _get_underlying_file(wrapper):
     return wrapper.file
 
 
-def _md5sum(source_path):
+def _md5sum(fobj):
     block_count = 0
     block = True
     md5string = b''
-    with open(source_path, "rb") as f:
-        while block:
-            block = f.read(AWS_UPLOAD_PART_SIZE)
-            if block:
-                block_count += 1
-                hash_obj = hashlib.md5()
-                hash_obj.update(block)
-                md5string = md5string + binascii.unhexlify(hash_obj.hexdigest())
-            else:
-                break
+    while block:
+        block = fobj.read(AWS_UPLOAD_PART_SIZE)
+        if block:
+            block_count += 1
+            hash_obj = hashlib.md5()
+            hash_obj.update(block)
+            md5string = md5string + binascii.unhexlify(hash_obj.hexdigest())
+        else:
+            break
+    fobj.seek(0, os.SEEK_SET)
     hash_obj = hashlib.md5()
     hash_obj.update(md5string)
     return hash_obj.hexdigest() + "-" + str(block_count)
@@ -299,36 +302,38 @@ class ResourceCloudStorage(CloudStorage):
                     object_name = self.path_from_filename(id, self.filename)
                     try:
                         cloud_object = self.container.get_object(object_name=object_name)
-                        print("\t Object found, checking size {0}: {1}".format(object_name, cloud_object.size))
-                        file_size = os.path.getsize(file_upload.name)
-                        print("\t - File size {0}: {1}".format(file_upload.name, file_size))
+                        log.debug("\t Object found, checking size %s: %s", object_name, cloud_object.size)
+                        if os.path.isfile(self.filename):
+                            file_size = os.path.getsize(self.filename)
+                        else:
+                            self.file_upload.seek(0, os.SEEK_END)
+                            file_size = self.file_upload.tell()
+                            self.file_upload.seek(0, os.SEEK_SET)
+
+                        log.debug("\t - File size %s: %s", self.filename, file_size)
                         if file_size == int(cloud_object.size):
-                            print("\t Size fits, checking hash {0}: {1}".format(object_name, cloud_object.hash))
-                            hash_file = hashlib.md5(open(file_upload.name, 'rb').read()).hexdigest()
-                            print("\t - File hash {0}: {1}".format(file_upload.name, hash_file))
+                            log.debug("\t Size fits, checking hash %s: %s", object_name, cloud_object.hash)
+                            hash_file = hashlib.md5(self.file_upload.read()).hexdigest()
+                            self.file_upload.seek(0, os.SEEK_SET)
+                            log.debug("\t - File hash %s: %s", self.filename, hash_file)
                             # basic hash
                             if hash_file == cloud_object.hash:
-                                print("\t => File found, matching hash, skipping upload")
+                                log.debug("\t => File found, matching hash, skipping upload")
                                 return
                             # multipart hash
-                            multi_hash_file = _md5sum(file_upload.name)
-                            print("\t - File multi hash {0}: {1}".format(file_upload.name, multi_hash_file))
+                            multi_hash_file = _md5sum(self.file_upload)
+                            log.debug("\t - File multi hash %s: %s", self.filename, multi_hash_file)
                             if multi_hash_file == cloud_object.hash:
-                                print("\t => File found, matching hash, skipping upload")
+                                log.debug("\t => File found, matching hash, skipping upload")
                                 return
-                        print("\t Resource found in the cloud but outdated, uploading")
+                        log.debug("\t Resource found in the cloud but outdated, uploading")
                     except ObjectDoesNotExistError:
-                        print("\t Resource not found in the cloud, uploading")
+                        log.debug("\t Resource not found in the cloud, uploading")
 
-                    # FIX: replaced call with a simpler version
-                    with open(file_upload.name, 'rb') as iterator:
-                        self.container.upload_object_via_stream(iterator=iterator, object_name=object_name)
-                    print("\t => UPLOADED {0}: {1}".format(file_upload.name, object_name))
-                except ValueError as v:
-                    print(traceback.format_exc())
-                    raise v
-                except types.InvalidCredsError as err:
-                    print(traceback.format_exc())
+                    self.container.upload_object_via_stream(iterator=iter(file_upload), object_name=object_name)
+                    log.debug("\t => UPLOADED %s: %s", self.filename, object_name)
+                except (ValueError, types.InvalidCredsError) as err:
+                    log.error(traceback.format_exc())
                     raise err
 
         elif self._clear and self.old_filename and not self.leave_files:

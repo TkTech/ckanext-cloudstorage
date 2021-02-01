@@ -59,7 +59,7 @@ first. Run next command from extension folder:
 
 For CKAN>=2.9 use the following command instead:
 
-    ckan -c /etc/ckan/default/production.ini ` db upgrade -p cloudstorage
+    ckan -c /etc/ckan/default/production.ini db upgrade -p cloudstorage
 
 With that feature you can use `cloudstorage_clean_multipart` action, which is available
 only for sysadmins. After executing, all unfinished multipart uploads, older than 7 days,

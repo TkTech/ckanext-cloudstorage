@@ -28,19 +28,18 @@ class TestCloudstoragePlugin(object):
             plugin.configure(ckan_config)
 
     @pytest.mark.usefixtures('clean_db')
-    def test_before_delete(self, make_resource):
+    def test_before_delete(self, create_with_upload):
         """When resource deleted, we must remove corresponding file from S3.
 
         """
         name = 'test.txt'
-        resource = make_resource('hello world', name, name=name)
+        resource = create_with_upload('hello world', name, name=name, package_id=factories.Dataset()['id'])
         plugin = p.get_plugin('cloudstorage')
         uploader = plugin.get_resource_uploader(resource)
         assert uploader.get_url_from_filename(resource['id'], name)
 
         helpers.call_action('resource_delete', id=resource['id'])
-        with pytest.raises(ObjectDoesNotExistError):
-            assert uploader.get_url_from_filename(resource['id'], name)
+        assert uploader.get_url_from_filename(resource['id'], name) is None
 
     @pytest.mark.usefixtures('clean_db')
     def test_before_delete_for_linked_resource(self):

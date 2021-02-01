@@ -38,9 +38,9 @@ class TestResourceDownload(object):
         app.get(url, status=302, extra_environ=env, follow_redirects=False)
 
     @pytest.mark.usefixtures('clean_db')
-    def test_download(self, make_resource, app):
+    def test_download(self, create_with_upload, app):
         filename = 'file.txt'
-        resource = make_resource('hello world', filename)
+        resource = create_with_upload('hello world', filename, package_id=factories.Dataset()['id'])
         url = tk.url_for(
             'resource.download',
             id=resource['package_id'],

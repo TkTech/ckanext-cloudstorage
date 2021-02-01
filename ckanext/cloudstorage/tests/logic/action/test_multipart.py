@@ -25,8 +25,7 @@ class TestMultipartUpload(object):
         storage = ResourceCloudStorage(res)
         assert storage.path_from_filename(
             res['id'], filename) == multipart['name']
-        with pytest.raises(ObjectDoesNotExistError):
-            storage.get_url_from_filename(res['id'], filename)
+        assert storage.get_url_from_filename(res['id'], filename) is None
 
         fp = six.BytesIO(b'b' * 1024 * 1024 * 5)
         fp.seek(0)
@@ -36,8 +35,7 @@ class TestMultipartUpload(object):
             partNumber=1,
             upload=FakeFileStorage(fp, filename))
 
-        with pytest.raises(ObjectDoesNotExistError):
-            storage.get_url_from_filename(res['id'], filename)
+        assert storage.get_url_from_filename(res['id'], filename) is None
 
         fp = six.BytesIO(b'a' * 1024 * 1024 * 5)
         fp.seek(0)
@@ -47,8 +45,7 @@ class TestMultipartUpload(object):
             partNumber=2,
             upload=FakeFileStorage(fp, filename))
 
-        with pytest.raises(ObjectDoesNotExistError):
-            storage.get_url_from_filename(res['id'], filename)
+        assert storage.get_url_from_filename(res['id'], filename) is None
 
         result = helpers.call_action(
             'cloudstorage_finish_multipart', uploadId=multipart['id'])
