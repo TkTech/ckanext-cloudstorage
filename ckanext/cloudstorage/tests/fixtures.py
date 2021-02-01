@@ -155,7 +155,7 @@ except ImportError:
             yield
 
     @pytest.fixture
-    def make_resource(clean_db, ckan_config, monkeypatch, tmpdir):
+    def create_with_upload(clean_db, ckan_config, monkeypatch, tmpdir):
         """Shortcut for creating uploaded resource.
         Requires content and name for newly created resource. By default
         is using `resource_create` action, but it can be changed by
@@ -165,8 +165,8 @@ except ImportError:
         additional named arguments, that will be used as resource
         properties.
         Example::
-            def test_uploaded_resource(make_resource):
-                resource = make_resource("hello world", "file.txt")
+            def test_uploaded_resource(create_with_upload):
+                resource = create_with_upload("hello world", "file.txt", package_id=factories.Dataset()['id'])
                 assert resource["url_type"] == "upload"
                 assert resource["format"] == "TXT"
                 assert resource["size"] == 11
@@ -186,7 +186,5 @@ except ImportError:
                 u"upload": test_resource,
             }
             params.update(kwargs)
-            if u'package_id' not in params:
-                params[u'package_id'] = factories.Dataset()[u"id"]
             return test_helpers.call_action(action, context, **params)
         return factory

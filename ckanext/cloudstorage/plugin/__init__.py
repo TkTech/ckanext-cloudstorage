@@ -33,7 +33,10 @@ class CloudStoragePlugin(MixinPlugin, plugins.SingletonPlugin):
     # ITemplateHelpers
 
     def get_helpers(self):
-        return dict(cloudstorage_use_secure_urls=helpers.use_secure_urls)
+        return dict(
+            cloudstorage_use_secure_urls=helpers.use_secure_urls,
+            cloudstorage_use_multipart_upload=helpers.use_multipart_upload,
+        )
 
     # IConfigurable
 
