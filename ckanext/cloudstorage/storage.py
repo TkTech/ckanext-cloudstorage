@@ -5,6 +5,7 @@ import mimetypes
 import logging
 import os
 import six
+import tempfile
 from six.moves.urllib.parse import urljoin
 from ast import literal_eval
 from datetime import datetime, timedelta
@@ -330,7 +331,22 @@ class ResourceCloudStorage(CloudStorage):
                     except ObjectDoesNotExistError:
                         log.debug("\t Resource not found in the cloud, uploading")
 
-                    self.container.upload_object_via_stream(iterator=iter(file_upload), object_name=object_name)
+                    # If it's temporary file, we'd better convert it
+                    # into FileIO. Otherwise libcloud will iterate
+                    # over lines, not over chunks and it will really
+                    # slow down the process for files that consist of
+                    # millions of short linew
+                    if isinstance(file_upload, tempfile.SpooledTemporaryFile):
+                        file_upload.rollover()
+                        try:
+                            # extract underlying file
+                            file_upload_iter = file_upload._file.detach()
+                        except AttributeError:
+                            # It's python2
+                            file_upload_iter = file_upload._file
+                    else:
+                        file_upload_iter = iter(file_upload)
+                    self.container.upload_object_via_stream(iterator=file_upload_iter, object_name=object_name)
                     log.debug("\t => UPLOADED %s: %s", self.filename, object_name)
                 except (ValueError, types.InvalidCredsError) as err:
                     log.error(traceback.format_exc())
