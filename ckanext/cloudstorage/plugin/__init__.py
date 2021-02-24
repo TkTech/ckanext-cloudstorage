@@ -36,6 +36,7 @@ class CloudStoragePlugin(MixinPlugin, plugins.SingletonPlugin):
         return dict(
             cloudstorage_use_secure_urls=helpers.use_secure_urls,
             cloudstorage_use_multipart_upload=helpers.use_multipart_upload,
+            cloudstorage_max_upload_size=helpers.max_upload_size,
         )
 
     # IConfigurable

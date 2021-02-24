@@ -14,3 +14,7 @@ def use_secure_urls():
 
 def use_multipart_upload():
     return use_secure_urls()
+
+
+def max_upload_size():
+    return tk.config.get('ckanext.cloudstorage.max_upload_size_gb')
