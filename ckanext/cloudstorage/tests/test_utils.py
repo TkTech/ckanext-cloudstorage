@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import pytest
-import mock
 
 import ckan.plugins.toolkit as tk
 
@@ -11,12 +10,11 @@ from ckanext.cloudstorage import utils, storage
 @pytest.mark.ckan_config('ckan.plugins', 'cloudstorage')
 @pytest.mark.usefixtures('with_driver_options', 'with_plugins')
 class TestResourceDownload(object):
-    def test_utils_used_by_download_route(self, app, monkeypatch):
+    def test_utils_used_by_download_route(self, app, mocker):
         url = tk.url_for('resource.download', id='a', resource_id='b')
-        func = mock.Mock(return_value='')
-        monkeypatch.setattr(utils, 'resource_download', func)
+        mocker.patch('ckanext.cloudstorage.utils.resource_download')
         app.get(url)
-        func.assert_called_once_with('a', 'b', None)
+        utils.resource_doewnload.assert_called_once_with('a', 'b', None)
 
     @pytest.mark.usefixtures('clean_db')
     def test_status_codes(self, app):

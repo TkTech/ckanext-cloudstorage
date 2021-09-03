@@ -218,12 +218,14 @@ class ResourceCloudStorage(CloudStorage):
             self.file_upload = _get_underlying_file(upload_field_storage)
             resource['url'] = self.filename
             resource['url_type'] = 'upload'
+            resource['last_modified'] = datetime.utcnow()
         elif multipart_name and self.can_use_advanced_aws:
             # This means that file was successfully uploaded and stored
             # at cloud.
             # Currently implemented just AWS version
             resource['url'] = munge.munge_filename(multipart_name)
             resource['url_type'] = 'upload'
+            resource['last_modified'] = datetime.utcnow()
         elif self._clear and resource.get('id'):
             # Apparently, this is a created-but-not-commited resource whose
             # file upload has been canceled. We're copying the behaviour of
