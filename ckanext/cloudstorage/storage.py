@@ -6,6 +6,7 @@ import os.path
 import urlparse
 from ast import literal_eval
 from datetime import datetime, timedelta
+from tempfile import SpooledTemporaryFile
 
 from pylons import config
 from ckan import model
@@ -243,6 +244,11 @@ class ResourceCloudStorage(CloudStorage):
                     content_settings=content_settings
                 )
             else:
+
+                # TODO: This might not be needed once libcloud is upgraded
+                if isinstance(self.file_upload, SpooledTemporaryFile):
+                    self.file_upload.next = self.file_upload.next()
+
                 self.container.upload_object_via_stream(
                     self.file_upload,
                     object_name=self.path_from_filename(
