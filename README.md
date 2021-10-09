@@ -83,10 +83,18 @@ cloudstorage will take care of the rest. Ex:
 
 # Configure plugin for Google Bucket
 
+install Google requirements:
+
+# pip install google-auth
+
+Check that six>=1.5 is satisfied
+
+Configure .ini file with the following:
+
 #Cloud storage settings
 ckanext.cloudstorage.driver = GOOGLE_STORAGE
 ckanext.cloudstorage.container_name = {BUCKET_NAME}
-ckanext.cloudstorage.driver_options = {"key": "{SERVICE_ACCOUNT_NAME}@{PROJECT_NAME}.iam.gserviceaccount.com", "secret": "{PATH_TO_SECRET_PEM_FILE}" }
+ckanext.cloudstorage.driver_options = {"key": "{SERVICE_ACCOUNT_NAME}@{PROJECT_NAME}.iam.gserviceaccount.com", "secret": "{PATH_TO_SECRET_KEY_FILE}" }
 ckanext.cloudstorage.use_secure_urls = True
 
 # FAQ
