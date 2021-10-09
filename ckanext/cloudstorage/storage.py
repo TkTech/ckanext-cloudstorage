@@ -122,9 +122,10 @@ class CloudStorage(object):
                 return True
             except ImportError:
                 # fail fast
-                # if we configure a google storage,
+                # if we configure a google storage and we have secure_urls,
                 # we may want to be sure to have it installed at runtime
-                raise
+                if self.use_secure_urls:
+                    raise
 
         return False
 
