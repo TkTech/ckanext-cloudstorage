@@ -38,6 +38,7 @@ below have been tested:
 | --- | --- | --- | --- |
 | Azure    | YES | YES | YES (if `azure-storage` is installed) |
 | AWS S3   | YES | YES | YES (if `boto` is installed) |
+| Google Bucket | YES | YES | YES (if `google-auth` and `six>=1.5` is installed) 
 | Rackspace | YES | YES | No |
 
 # What are "Secure URLs"?
@@ -79,6 +80,14 @@ cloudstorage will take care of the rest. Ex:
    using, if supported.
 2. Currently, only resources are supported. This means that things like group
    and organization images still use CKAN's local file storage.
+
+# Configure plugin for Google Bucket
+
+#Cloud storage settings
+ckanext.cloudstorage.driver = GOOGLE_STORAGE
+ckanext.cloudstorage.container_name = {BUCKET_NAME}
+ckanext.cloudstorage.driver_options = {"key": "{SERVICE_ACCOUNT_NAME}@{PROJECT_NAME}.iam.gserviceaccount.com", "secret": "{PATH_TO_SECRET_PEM_FILE}" }
+ckanext.cloudstorage.use_secure_urls = True
 
 # FAQ
 

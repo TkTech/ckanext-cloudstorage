@@ -104,6 +104,32 @@ class CloudStorage(object):
         )
 
     @property
+    def can_use_advanced_google(self):
+        """
+        `True` if the `google-auth` module is installed and
+        ckanext-cloudstorage has been configured to use Google, otherwise
+        `False`.
+        """
+        # Are we even using GOOGLE?
+        if self.driver_name == 'GOOGLE_STORAGE':
+            try:
+                # Yes? Is the 'google-auth' package available?
+                from google.auth import crypt
+                assert crypt
+                # check six >=1.5
+                import six
+                assert six.ensure_binary
+                return True
+            except ImportError:
+                # fail fast
+                # if we configure a google storage,
+                # we may want to be sure to have it installed at runtime
+                raise
+
+        return False
+
+
+    @property
     def can_use_advanced_azure(self):
         """
         `True` if the `azure-storage` module is installed and
@@ -331,6 +357,18 @@ class ResourceCloudStorage(CloudStorage):
 
             return s3_connection.generate_url(**generate_url_params)
 
+        elif self.can_use_advanced_google and self.use_secure_urls:
+            
+            import ckanext.cloudstorage.google_storage as storage
+            obj=self.container.get_object(path)
+
+            return storage.generate_signed_url(
+                self.driver_options['key'],
+                self.driver_options['secret'],
+                self.container_name,
+                object_name=obj.name,
+                expiration= 60*60)
+        
         # Find the object for the given key.
         obj = self.container.get_object(path)
         if obj is None:
