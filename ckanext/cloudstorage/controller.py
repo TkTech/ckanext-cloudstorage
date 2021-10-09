@@ -5,10 +5,14 @@ import os.path
 from pylons import c
 from pylons.i18n import _
 
+from ckan.common import request, response
 from ckan import logic, model
 from ckan.lib import base, uploader
 import ckan.lib.helpers as h
 
+import ckanext.cloudstorage.storage as _storage
+storage = _storage.CloudStorage
+is_proxy_download=storage.proxy_download.fget(storage)
 
 class StorageController(base.BaseController):
     def resource_download(self, id, resource_id, filename=None):
@@ -48,12 +52,28 @@ class StorageController(base.BaseController):
         # if the client requests with a Content-Type header (e.g. Text preview)
         # we have to add the header to the signature
         try:
-            content_type = getattr(c.pylons.request, "content_type", None)
+            content_type = getattr(request, "content_type", None)
         except AttributeError:
             content_type = None
-        uploaded_url = upload.get_url_from_filename(resource['id'], filename,
-                                                    content_type=content_type)
+        
+        # If the repository is private you may want to use ckan accout to proxy
+        # protected contents
+        # ckanext.cloudstorage.proxy_download = [False|True]
+        # Default: False
+        if is_proxy_download:
+            # remote object
+            obj = upload.get_object(resource['id'],filename)
+            # metaadta
+            extra = obj.extra
+            if extra:
+                # let's leverage on external mimetype if present
+                response.headers['Content-Type'] = extra.get('content_type',content_type)
+            # return stream back
+            return upload.get_object_as_stream(obj)
 
+        uploaded_url = upload.get_url_from_filename(resource['id'], filename,
+                                                            content_type=content_type)
+        
         # The uploaded file is missing for some reason, such as the
         # provider being down.
         if uploaded_url is None:
