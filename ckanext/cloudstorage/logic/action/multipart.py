@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import logging
 import datetime
-
+import mimetypes
 import libcloud.security
 
 from sqlalchemy.orm.exc import NoResultFound
@@ -136,10 +136,15 @@ def initiate_multipart(context, data_dict):
             except Exception as e:
                 log.exception('[delete from cloud] %s' % e)
 
+        headers = None
+        content_type, _ = mimetypes.guess_type(res_name)
+        if content_type:
+            headers = {"Content-type": content_type}
         upload_object = MultipartUpload(
             uploader.driver._initiate_multipart(
                 container=uploader.container,
-                object_name=res_name
+                object_name=res_name,
+                headers=headers
             ),
             id,
             res_name,
