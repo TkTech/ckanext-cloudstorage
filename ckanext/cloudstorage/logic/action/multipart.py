@@ -9,6 +9,7 @@ from sqlalchemy.orm.exc import NoResultFound
 import ckan.model as model
 import ckan.lib.helpers as h
 import ckan.plugins.toolkit as toolkit
+from ckan.lib.uploader import get_resource_uploader
 
 from ckanext.cloudstorage.storage import ResourceCloudStorage
 from ckanext.cloudstorage.model import MultipartUpload, MultipartPart
@@ -107,7 +108,11 @@ def initiate_multipart(context, data_dict):
     user_obj = model.User.get(context['user'])
     user_id = user_obj.id if user_obj else None
 
-    uploader = ResourceCloudStorage({'multipart_name': name})
+    uploader = get_resource_uploader({'multipart_name': name})
+    if not isinstance(uploader, ResourceCloudStorage):
+        raise toolkit.ValidationError({
+            "uploader": [f"Must be ResourceCloudStorage or its subclass, not {type(uploadev)}"]
+        })
     res_name = uploader.path_from_filename(id, name)
 
     upload_object = MultipartUpload.by_name(res_name)
