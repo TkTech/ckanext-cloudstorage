@@ -135,9 +135,15 @@ def initiate_multipart(context, data_dict):
                     uploader.container,
                     name_prefix
                 )
+
                 for obj in old_objects:
-                    log.info('Removing cloud object: %s' % obj)
-                    obj.delete()
+                    for similar in model.Session.query(model.Resource).filter_by(url=obj.name[len(name_prefix)+1:]):
+                        if obj.name == uploader.path_from_filename(similar.id, similar.url):
+                            log.info('Leave cloud object because it is referenced by resource %s: %s', similar.id,  obj)
+                            break
+                    else:
+                        log.info('Removing cloud object: %s' % obj)
+                        obj.delete()
             except Exception as e:
                 log.exception('[delete from cloud] %s' % e)
 
