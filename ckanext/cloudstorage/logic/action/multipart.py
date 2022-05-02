@@ -108,7 +108,7 @@ def initiate_multipart(context, data_dict):
     user_obj = model.User.get(context['user'])
     user_id = user_obj.id if user_obj else None
 
-    uploader = get_resource_uploader({'multipart_name': name})
+    uploader = get_resource_uploader({'multipart_name': name, "id": id})
     if not isinstance(uploader, ResourceCloudStorage):
         raise toolkit.ValidationError({
             "uploader": [f"Must be ResourceCloudStorage or its subclass, not {type(uploadev)}"]
@@ -175,8 +175,9 @@ def upload_multipart(context, data_dict):
         ['uploadId', 'partNumber', 'upload']
     )
 
-    uploader = ResourceCloudStorage({})
     upload = model.Session.query(MultipartUpload).get(upload_id)
+    uploader = get_resource_uploader({"id": upload.resource_id})
+
     data = _get_underlying_file(part_content).read()
     resp = uploader.driver.connection.request(
         _get_object_url(
@@ -224,7 +225,8 @@ def finish_multipart(context, data_dict):
         for part in model.Session.query(MultipartPart).filter_by(
             upload_id=upload_id).order_by(MultipartPart.n)
     ]
-    uploader = ResourceCloudStorage({})
+    uploader = get_resource_uploader({"id": upload.resource_id})
+
     try:
         obj = uploader.container.get_object(upload.name)
         obj.delete()
@@ -258,8 +260,8 @@ def finish_multipart(context, data_dict):
 def abort_multipart(context, data_dict):
     h.check_access('cloudstorage_abort_multipart', data_dict)
     id = toolkit.get_or_bust(data_dict, ['id'])
-    uploader = ResourceCloudStorage({})
 
+    uploader = get_resource_uploader({"id": id})
     resource_uploads = MultipartUpload.resource_uploads(id)
 
     aborted = []
@@ -288,7 +290,6 @@ def clean_multipart(context, data_dict):
     """
 
     h.check_access('cloudstorage_clean_multipart', data_dict)
-    uploader = ResourceCloudStorage({})
     delta = _get_max_multipart_lifetime()
     oldest_allowed = datetime.datetime.utcnow() - delta
 
@@ -303,6 +304,8 @@ def clean_multipart(context, data_dict):
     }
 
     for upload in uploads_to_remove:
+        uploader = get_resource_uploader({"id": upload.resource_id})
+
         try:
             _delete_multipart(upload, uploader)
         except toolkit.ValidationError as e:
