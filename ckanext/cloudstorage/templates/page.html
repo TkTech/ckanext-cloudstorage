@@ -2,6 +2,10 @@
 
 {% block scripts %}
     {{ super() }}
-    {% resource 'cloudstorage-js/main' %}
+    {% with version = h.ckan_version() %}
+        {# version < '2.2' means CKAN>=2.10, because cloudstorage just won't work with CKAN==2.1.* #}
+        {% set type = 'asset' if h.ckan_version().split('.')[1] | int >= 9 else 'resource' %}
+        {% include 'cloudstorage/snippets/cloudstorage-js_' ~ type ~ '.html' %}
+    {% endwith %}
 
 {% endblock %}

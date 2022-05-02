@@ -17,8 +17,9 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
-        'apache-libcloud==1.5',
-        'ckanapi>=1.0,<5'
+        'apache-libcloud~=2.8.2',
+        'six>=1.12.0',
+        'ckanapi',
     ],
     entry_points=(
         """
@@ -26,7 +27,7 @@ setup(
         cloudstorage=ckanext.cloudstorage.plugin:CloudStoragePlugin
 
         [paste.paster_command]
-        cloudstorage=ckanext.cloudstorage.cli:PasterCommand
+        cloudstorage=ckanext.cloudstorage.commands:PasterCommand
         """
     ),
 )

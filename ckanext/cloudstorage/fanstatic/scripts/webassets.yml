@@ -1,0 +1,10 @@
+main:
+  filters: rjsmin
+  output: ckanext-cloudstorage/%(version)s_main.js
+  extra:
+    preload:
+      - base/main
+      - vendor/fileupload
+  contents:
+    - vendor/jquery-widget.js
+    - cloudstorage-multipart-upload.js

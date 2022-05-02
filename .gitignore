@@ -5,6 +5,7 @@ syntax: glob
 *.swo
 .DS_Store
 ckan.egg-info/*
+ckanext_cloudstorage.egg-info/*
 sandbox/*
 dist
 
@@ -16,5 +17,6 @@ tmp/*
 solr_runtime/*
 fl_notes.txt
 *.ini
+!alembic.ini
 .noseids
 *~

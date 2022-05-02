@@ -1,10 +1,12 @@
 <div
-    {% if h.cloudstorage_use_secure_urls() -%}
+    {% if h.cloudstorage_use_multipart_upload() %}
         data-module="cloudstorage-multipart-upload"
         data-module-cloud='S3'
+        {# prevent type-guessing inside JS module by prefixing ID with underscore #}
         data-module-package-id="_{{ pkg_name }}"
-    {%- endif %}
-   >
+        data-module-max-size="{{ max_size }}"
+    {% endif %}
+>
     {{ parent() }}
 
 </div>
