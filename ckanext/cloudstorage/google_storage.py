@@ -2,6 +2,7 @@ import binascii
 import collections
 import datetime
 import hashlib
+import json
 
 # pip install google-auth
 from google.auth import crypt
@@ -89,8 +90,14 @@ def generate_signed_url(service_account_email, private_key_file, bucket_name, ob
 
     if not keydata:
         raise Exception('Unable to load private key file')
+
+    # Convert the string to a dictionary
+    keydata_dict = json.loads(keydata)
+
+    # Extract the private key string
+    private_key = keydata_dict["private_key"]
         
-    signer = crypt.RSASigner.from_string(keydata)
+    signer = crypt.RSASigner.from_string(private_key)
 
     signature = binascii.hexlify(
         signer.sign(string_to_sign)

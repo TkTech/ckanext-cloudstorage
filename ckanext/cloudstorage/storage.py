@@ -178,7 +178,16 @@ class CloudStorage(object):
         return p.toolkit.asbool(
             config.get('ckanext.cloudstorage.guess_mimetype', False)
         )
-
+    
+    @property
+    def proxy_download(self):
+        """
+        If the ckan may stream the object (will use service account to download
+        from private storages)
+        """
+        return p.toolkit.asbool(
+            config.get('ckanext.cloudstorage.proxy_download', False)
+        )
 
 class ResourceCloudStorage(CloudStorage):
     def __init__(self, resource):
@@ -271,7 +280,7 @@ class ResourceCloudStorage(CloudStorage):
                     content_settings=content_settings
                 )
             else:
-
+            
                 # TODO: This might not be needed once libcloud is upgraded
                 if isinstance(self.file_upload, SpooledTemporaryFile):
                     self.file_upload.next = self.file_upload.next()
@@ -394,6 +403,15 @@ class ResourceCloudStorage(CloudStorage):
                 return obj.extra['url']
             raise
 
+    def get_object(self, rid, filename):
+        # Find the key the file *should* be stored at.
+        path = self.path_from_filename(rid, filename)
+        # Find the object for the given key.
+        return self.container.get_object(path)
+
+    def get_object_as_stream(self, obj):
+        return self.driver.download_object_as_stream(obj) 
+        
     @property
     def package(self):
         return model.Package.get(self.resource['package_id'])
