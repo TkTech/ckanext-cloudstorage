@@ -1,0 +1,5 @@
+apache-libcloud==2.8.3
+ckanapi>=1.0,<5
+# only needed when safe url is required
+six==1.13.0
+google-auth==2.25.2
