@@ -373,7 +373,6 @@ class ResourceCloudStorage(CloudStorage):
             obj=self.container.get_object(path)
 
             return storage.generate_signed_url(
-                self.driver_options['key'],
                 self.driver_options['secret'],
                 self.container_name,
                 object_name=obj.name,
