@@ -103,9 +103,8 @@ and move that data to your google cloud storage.
 
 Before running etl script make sure you have setp this config values :
 
-ckanext.cloudstorage.ckan_api_key= ckan api key for your sysadmin account
-ckanext.cloudstorage.service_account_key_path= path to the service account json file
-ckanext.cloudstorage.gcp_base_url= your gcp base url
+ckanext.cloudstorage.service_account_key_path= {PATH_TO_SECRET_KEY_FILE}
+ckanext.cloudstorage.gcp_base_url= {your gcp base url}
 
 From etl folder run the command below:
 

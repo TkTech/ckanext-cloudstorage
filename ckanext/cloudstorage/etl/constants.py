@@ -49,13 +49,15 @@ def get_config_value(section, option, error_msg):
 
 log.info("="*100)
 # Access the constants with centralized function
+
+CKAN_ROOT_PATH = get_config_value('app:main', 'ckan.root_path', 
+                                 "CKAN ROOT PATH not defined in production.ini")
+log.info("CKAN_ROOT_PATH = {}".format(CKAN_ROOT_PATH))
+
 CKAN_BASE_URL = get_config_value('app:main', 'ckan.site_url', 
                                  "CKAN site URL not defined in production.ini")
+CKAN_BASE_URL = CKAN_BASE_URL + CKAN_ROOT_PATH
 log.info("CKAN_BASE_URL = {}".format(CKAN_BASE_URL))
-
-CKAN_API_KEY = get_config_value('app:main', 'ckanext.cloudstorage.ckan_api_key', 
-                           "CKAN API key not defined in production.ini")
-log.info("CKAN_API_KEY = {}".format(CKAN_API_KEY))
 
 SERVICE_ACCOUNT_KEY_PATH = get_config_value('app:main', 'ckanext.cloudstorage.service_account_key_path', 
                                             "CKAN cloudstorage service account path not defined in production.ini")

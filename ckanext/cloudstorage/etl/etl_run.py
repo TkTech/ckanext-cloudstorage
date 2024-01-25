@@ -5,7 +5,7 @@ from ckanext.cloudstorage.etl.gcp_utils import create_id_token_and_auth_session
 from ckanext.cloudstorage.etl.org_group_manager import OrganizationGroupManager
 from ckanext.cloudstorage.etl.ckan_manager import CKANManager
 from ckanext.cloudstorage.etl.bucket_utils import upload_to_gcp
-from constants import CKAN_BASE_URL, CKAN_API_KEY, SERVICE_ACCOUNT_KEY_PATH, GCP_BASE_URL
+from constants import CKAN_BASE_URL, SERVICE_ACCOUNT_KEY_PATH, GCP_BASE_URL
 
 # Logging Configuration
 log = logging.getLogger('ETL')
@@ -20,8 +20,8 @@ if not log.handlers:
 # Prevent log messages from being propagated to the root log
 log.propagate = False
 
-def run(organization):
-    ckan_manager = CKANManager(CKAN_BASE_URL, CKAN_API_KEY)
+def run(organization, ckan_api_key):
+    ckan_manager = CKANManager(CKAN_BASE_URL, ckan_api_key)
     org_members = ckan_manager.get_all_organization_members()
     orgs_with_desc = ckan_manager.get_organizations_with_descriptions()
     active_users = ckan_manager.get_active_users()
@@ -46,9 +46,10 @@ def run(organization):
 def main():
     parser = argparse.ArgumentParser(description='Run ETL process for a specific organization.')
     parser.add_argument('organization', help='Name of the organization')
+    parser.add_argument('ckan_api_key', help='ckan api key value')
     args = parser.parse_args()
 
-    run(args.organization)
+    run(args.organization, args.ckan_api_key)
 
 if __name__ == '__main__':
     main()
