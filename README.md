@@ -97,6 +97,24 @@ ckanext.cloudstorage.container_name = {BUCKET_NAME}
 ckanext.cloudstorage.driver_options = {"key": "{SERVICE_ACCOUNT_NAME}@{PROJECT_NAME}.iam.gserviceaccount.com", "secret": "{PATH_TO_SECRET_KEY_FILE}" }
 ckanext.cloudstorage.use_secure_urls = True
 
+# ETL Script 
+this script will extract all the data(packages, resources) for a given orgnaization
+and move that data to your google cloud storage.
+
+Before running etl script make sure you have setp this config values :
+
+ckanext.cloudstorage.ckan_api_key= ckan api key for your sysadmin account
+ckanext.cloudstorage.service_account_key_path= path to the service account json file
+ckanext.cloudstorage.gcp_base_url= your gcp base url
+
+From etl folder run the command below:
+
+```python
+
+python etl_run.py organization_name
+```
+Replace `organization_name` with the actual name of the organization you want to process.
+
 # FAQ
 
 - *DataViews aren't showing my data!* - did you setup CORS rules properly on
