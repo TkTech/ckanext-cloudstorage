@@ -2,9 +2,7 @@ import logging
 import os
 
 from google.cloud import storage
-from constants import SERVICE_ACCOUNT_KEY_PATH
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = SERVICE_ACCOUNT_KEY_PATH
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

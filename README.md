@@ -104,15 +104,20 @@ and move that data to your google cloud storage.
 Before running etl script make sure you have setp this config values :
 
 ckanext.cloudstorage.service_account_key_path= {PATH_TO_SECRET_KEY_FILE}
-ckanext.cloudstorage.gcp_base_url= {your gcp base url}
+ckanext.cloudstorage.gcp_base_url= {GCP_BASE_URL}
+ckan.site_url= {SITE_URL}
+ckan.root_path= {ROOT_PATH}
+ckan.storage_path={STORAGE_PATH}
 
 From etl folder run the command below:
 
 ```python
 
-python etl_run.py organization_name
+python etl_run.py organization_name ckan_api_key configuration_file
 ```
 Replace `organization_name` with the actual name of the organization you want to process.
+Replace `ckan_api_key` with the actual sysadmin api key of your ckan instance.
+Replace `configuration_file` with the path of your production.ini file.
 
 # FAQ
 

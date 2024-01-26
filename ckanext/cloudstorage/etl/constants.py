@@ -1,72 +1,77 @@
-"""
-constants.py
-
-This module is responsible for reading configuration values from the CKAN
-production.ini file. It retrieves specific settings related to the CKAN instance,
-such as the base URL, API key, service account path, and GCP FAO base URL.
-"""
-
 import logging
 import configparser
 
 # Configure Logging
 log = logging.getLogger('Config')
 
-# Initialize ConfigParser and read production.ini
-config = configparser.ConfigParser()
-config.read('/etc/ckan/production.ini')
 
 class ConfigNotFound(Exception):
     """Exception raised for missing configuration.
-
     Attributes:
         message -- explanation of the error
     """
-
     def __init__(self, message):
         self.message = message
         super(ConfigNotFound, self).__init__(self.message)
 
 
-def get_config_value(section, option, error_msg):
+class ConfigurationManager(object):
     """
-    Retrieve a configuration value from the production.ini file.
-    
-    Args:
-        section (str): The section in the ini file where the setting is located.
-        option (str): The option name of the setting to retrieve.
-        error_msg (str): The error message to log if the setting is not found.
-    
-    Returns:
-        str: The value of the configuration setting, or None if not found.
+    Manages loading and accessing configuration settings from a file.
+
+    This class uses a class method to load configuration settings from a specified
+    file and provides a method to retrieve individual configuration values.
     """
-    try:
-        return config.get(section, option)
-    except configparser.NoOptionError:
-        log.error(error_msg)
-        raise ConfigNotFound(message=error_msg)
 
+    _config = None
+    _loaded = False
 
-log.info("="*100)
-# Access the constants with centralized function
+    @classmethod
+    def load_config(cls, config_file):
+        """
+        Load the configuration from a file.
 
-CKAN_ROOT_PATH = get_config_value('app:main', 'ckan.root_path', 
-                                 "CKAN ROOT PATH not defined in production.ini")
-log.info("CKAN_ROOT_PATH = {}".format(CKAN_ROOT_PATH))
+        Args:
+            config_file (str): The path to the configuration file.
 
-CKAN_BASE_URL = get_config_value('app:main', 'ckan.site_url', 
-                                 "CKAN site URL not defined in production.ini")
-CKAN_BASE_URL = CKAN_BASE_URL + CKAN_ROOT_PATH
-log.info("CKAN_BASE_URL = {}".format(CKAN_BASE_URL))
+        Raises:
+            ConfigNotFound: If the file is not found.
+            Exception: For any other issues encountered during file loading.
+        """
+        if not cls._loaded:
+            cls._config = configparser.ConfigParser()
+            try:
+                with open(config_file) as f:
+                    cls._config.readfp(f)
+                cls._loaded = True
+                log.info("Configuration loaded successfully from {}".format(config_file))
+            except IOError:
+                log.error("Unable to find '{}'".format(config_file))
+                raise Exception("Unable to find '{}'".format(config_file))
+            except Exception as e:
+                log.error("Unexpected error while attempting to load '{}': {}".format(config_file, e))
+                raise Exception("Unexpected error while attempting to load '{}': {}".format(config_file, e))
 
-SERVICE_ACCOUNT_KEY_PATH = get_config_value('app:main', 'ckanext.cloudstorage.service_account_key_path', 
-                                            "CKAN cloudstorage service account path not defined in production.ini")
-log.info("SERVICE_ACCOUNT_KEY_PATH = {}".format(SERVICE_ACCOUNT_KEY_PATH))
+    @classmethod
+    def get_config_value(cls, section, option, error_msg):
+        """
+        Retrieve a configuration value from the loaded configuration.
 
-GCP_BASE_URL = get_config_value('app:main', 'ckanext.cloudstorage.gcp_base_url', 
-                                    "CKAN cloudstorage GCP base URL not defined in production.ini")
+        Args:
+            section (str): The section in the configuration file.
+            option (str): The option key to retrieve.
+            error_msg (str): Error message to display if the option is not found.
 
-STORAGE_DIR = get_config_value('app:main', 'ckan.storage_path', 
-                                    "CKAN storage path not defined in production.ini")
-log.info("GCP_BASE_URL = {}".format(GCP_BASE_URL))
-log.info("="*100)
+        Returns:
+            str: The value of the configuration option.
+
+        Raises:
+            Exception: If the configuration is not loaded or the option is not found.
+        """
+        if not cls._loaded:
+            raise Exception("Configuration not loaded. Call 'load_config' first.")
+        try:
+            return cls._config.get(section, option)
+        except configparser.NoOptionError:
+            log.error(error_msg)
+            raise ConfigNotFound(message=error_msg)
