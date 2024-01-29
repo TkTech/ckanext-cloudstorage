@@ -3,10 +3,10 @@ import argparse
 from constants import ConfigurationManager
 import os
 
-from ckanext.cloudstorage.etl.gcp_utils import create_id_token_and_auth_session
+from ckanext.cloudstorage.authorization import create_id_token_and_auth_session
 from ckanext.cloudstorage.etl.org_group_manager import OrganizationGroupManager
 from ckanext.cloudstorage.etl.ckan_manager import CKANManager
-from ckanext.cloudstorage.etl.bucket_utils import upload_to_gcp
+from ckanext.cloudstorage.bucket import upload_to_gcp_bucket
     
 
 # Logging Configuration
@@ -49,33 +49,42 @@ def run():
     STORAGE_DIR = ConfigurationManager.get_config_value('app:main', 'ckan.storage_path', 
                                     "CKAN storage path not defined in production.ini")
     log.info("STORAGE_DIR = {}".format(STORAGE_DIR))
+
+    PREFIX = ConfigurationManager.get_config_value('app:main', 'ckanext.cloudstorage.prefix', 
+                                    "CKAN cloudstorage prefix not defined in production.ini")
+    log.info("PREFIX = {}".format(PREFIX))
+
+    DOMAIN = ConfigurationManager.get_config_value('app:main', 'ckanext.cloudstorage.domain', 
+                                    "CKAN cloudstorage domain not defined in production.ini")
+    log.info("DOMAIN = {}".format(DOMAIN))
     log.info("="*100)
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = SERVICE_ACCOUNT_KEY_PATH
 
-    ckan_manager = CKANManager(CKAN_BASE_URL, STORAGE_DIR, args.ckan_api_key)
+    ckan_manager = CKANManager(CKAN_BASE_URL, STORAGE_DIR, args.ckan_api_key, PREFIX)
     
-    try:
-        org_members = ckan_manager.get_all_organization_members()
-        orgs_with_desc = ckan_manager.get_organizations_with_descriptions()
-        active_users = ckan_manager.get_active_users()
+    org_members = ckan_manager.get_members_for_single_org(args.organization)
+    orgs_with_desc = ckan_manager.get_organization_description(args.organization)
+    active_users = ckan_manager.get_active_users()
 
-        service_account_key_path = SERVICE_ACCOUNT_KEY_PATH
-        auth_session = create_id_token_and_auth_session(service_account_key_path)
+    service_account_key_path = SERVICE_ACCOUNT_KEY_PATH
+    auth_session = create_id_token_and_auth_session(service_account_key_path)
 
-        manager = OrganizationGroupManager(auth_session, GCP_BASE_URL)
-        log.info("Process each organization to create groups and add members")
-        log.info("="*100)
-        responses = manager.process_organizations(orgs_with_desc, org_members, active_users)
+    manager = OrganizationGroupManager(auth_session, GCP_BASE_URL, DOMAIN, PREFIX)
+    log.info("Process {} to create groups and add members".format(args.organization))
+    log.info("="*100)
+    response_obj = manager.process_organizations(orgs_with_desc, org_members, active_users)
+    if response_obj['success'] == False:
+        log.error("Failed processing organization {}.".format(args.organization))
+        exit(-1)
+    
+    log.info("Retrieve packages, and resources for {}".format(args.organization))
+    log.info("="*100)
+    data = ckan_manager.get_data_for_single_org(args.organization)
+    if data:
+        ckan_manager.process_resources(data, upload_to_gcp_bucket)
+    else:
+        log.error("Failed to retrieve data.")
 
-        log.info("Retrieve all organizations, their packages, and resources.")
-        log.info("="*100)
-        data = ckan_manager.get_data_for_single_org(args.organization)
-        if data:
-            ckan_manager.process_resources(data, upload_to_gcp)
-        else:
-            log.error("Failed to retrieve data.")
-    except Exception as e:
-            log.error("An error occurred: {}".format(e))
 
 if __name__ == '__main__':
     run()

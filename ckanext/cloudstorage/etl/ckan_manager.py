@@ -15,6 +15,7 @@ class CKANManager:
         ckan_url (str): URL of the CKAN instance.
         api_key (str): API key for authentication (optional).
     """
+    ORGANIZATION_DETAIL_ENDPOINT = '/api/3/action/organization_show?id='
     ORGANIZATION_USER_MEMBERS_LIST = '/api/3/action/organization_show?id={}&include_users=true'
     ORGANIZATION_LIST_ENDPOINT = '/api/3/action/organization_list'
     ORGANIZATION_DESC_ENDPOINT = '/api/3/action/organization_list?all_fields=true'
@@ -22,7 +23,7 @@ class CKANManager:
     PACKAGE_SHOW_ENDPOINT = '/api/3/action/package_show?id={}'
     USER_LIST_ENDPOINT = '/api/3/action/user_list?all_fields=true'
 
-    def __init__(self, ckan_url, ckan_storage_dir, api_key=None):
+    def __init__(self, ckan_url, ckan_storage_dir, api_key=None, prefix=""):
         """
         Initialize the CKANManager with CKAN instance URL and API key.
 
@@ -33,6 +34,7 @@ class CKANManager:
         self.ckan_url = ckan_url
         self.api_key = api_key
         self.ckan_storage_dir = ckan_storage_dir
+        self.prefix = prefix
 
     def get_request(self, url):
         """
@@ -90,6 +92,29 @@ class CKANManager:
         else:
             log.error("Failed to retrieve users.")
             return None
+
+    def get_organization_description(self, organization_name):
+        """
+        Retrieves the name and description for a specific organization.
+
+        Args:
+            organization_name (str): The name of the organization to retrieve.
+
+        Returns:
+            dict or None: A dictionary with the organization name as key and its description as value,
+                        or None if the organization is not found or an error occurs.
+        """
+        endpoint = self.ckan_url.rstrip('/') + self.ORGANIZATION_DETAIL_ENDPOINT + organization_name
+        data = self.get_request(endpoint)
+
+        if data and data.get('success'):
+            org = data['result']
+            log.info("Successfully retrieved organization: {}.".format(organization_name))
+            return {org['name']: org['description']}
+        else:
+            log.error("Failed to retrieve organization: {}.".format(organization_name))
+            return None
+
 
     def get_all_organizations(self):
         """
@@ -160,6 +185,23 @@ class CKANManager:
                 members = self.get_organization_members(org_name)
                 if members:
                     all_members[org_name] = members
+
+        return all_members
+
+
+    def get_members_for_single_org(self, organziation):
+        """
+        Retrieves all user members with their roles for given organization.
+
+        Returns:
+            dict: A dictionary with organization names as keys and dicts of user members
+                  and their roles as values.
+        """
+        all_members = {}
+
+        members = self.get_organization_members(organziation)
+        if members:
+            all_members[organziation] = members
 
         return all_members
 
@@ -348,8 +390,7 @@ class CKANManager:
                         
                             if url.startswith(self.ckan_url):
                                 base_resource_dir= "{}/resources/".format(self.ckan_storage_dir)
-                                prefix = "fao-catalog-"
-                                bucket_name = prefix + organization
+                                bucket_name = self.prefix + organization
                                 destination_blob_name = os.path.join(
                                     'packages',
                                     package_id,

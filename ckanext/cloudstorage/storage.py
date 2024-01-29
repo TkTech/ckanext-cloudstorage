@@ -85,6 +85,21 @@ class CloudStorage(object):
             based on the Provider enum.
         """
         return config['ckanext.cloudstorage.driver']
+    
+    @property
+    def prefix(self):
+        """
+        The prefix of container or group name
+        """
+        return config['ckanext.cloudstorage.prefix']
+
+
+    @property
+    def domain(self):
+        """
+        gcp domain
+        """
+        return config['ckanext.cloudstorage.domain']
 
     @property
     def container_name(self):
@@ -156,6 +171,7 @@ class CloudStorage(object):
         # Are we even using GOOGLE?
         if self.driver_name == 'GOOGLE_STORAGE':
             try:
+                os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = self.driver_options["secret"]
                 # Yes? Is the 'google-auth' package available?
                 from google.auth import crypt
                 assert crypt
@@ -239,7 +255,7 @@ class ResourceCloudStorage(CloudStorage):
         """
         self.role = str(self.get_user_role_in_organization()).encode('ascii', 'ignore')
         self.container_name = self.get_container_name_of_current_org()
-        self.group_email = self.container_name + "@fao.org"
+        self.group_email = self.container_name + "@" + self.domain
 
     def _handle_file_upload(self, resource):
         """
@@ -333,8 +349,8 @@ class ResourceCloudStorage(CloudStorage):
         owner_org = str(self.package.owner_org).encode('ascii', 'ignore')
         org = model.Session.query(model.Group) \
             .filter(model.Group.id == owner_org).first()
-        prefix = "fao-catalog-"
-        name = prefix + str(org.name).encode('ascii', 'ignore')
+
+        name = self.prefix + str(org.name).encode('ascii', 'ignore')
         log.info("Container name retrieved: %s", name)
         return name
 
