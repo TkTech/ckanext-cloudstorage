@@ -1,11 +1,23 @@
 import logging
+import os
 
 from google.cloud import storage
+from google.cloud.exceptions import NotFound, GoogleCloudError
+
 
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
+
+
+class UploadError(Exception):
+    """Custom exception for upload failures."""
+    pass
+
+class BucketError(Exception):
+    """Custom exception for upload failures."""
+    pass
 
 
 def create_bucket(bucket_name, cloud_storage=None):
@@ -29,38 +41,15 @@ def create_bucket(bucket_name, cloud_storage=None):
             if isinstance(cloud_storage, CloudStorage):
                 cloud_storage.container_name = bucket_name
 
-        return True
     except Exception as e:
         log.error("Error creating bucket: {}".format(e))
-        return False
+        raise BucketError("Error creating bucket: {}".format(e))
 
-def get_bucket_info(bucket_name):
-    """
-    Retrieve and return information about the specified Google Cloud Storage bucket.
-
-    Args:
-        bucket_name (str): Name of the Google Cloud Storage bucket.
-
-    Returns:
-        dict: Dictionary containing bucket information if successful, empty dict otherwise.
-    """
-    try:
-        storage_client = storage.Client()
-        bucket = storage_client.get_bucket(bucket_name)
-
-        bucket_info = {
-            "Bucket Name": bucket.name,
-            "Storage Class": bucket.storage_class,
-            "Location": bucket.location,
-            "Location Type": bucket.location_type
-            # Add more properties here as needed
-        }
-
-        log.info("Bucket information retrieved: {}".format(bucket_info))
-        return bucket_info
-    except Exception as e:
-        log.error("Error getting bucket info: {}".format(e))
-        return {}
+def check_err_response_from_gcp(response, err_msg):
+    if "error" in response:
+        log.error("{}: {}".format(err_msg, response))
+        raise  Exception(response["error"])
+    return response
 
 def add_group_iam_permissions(bucket_name, group_email):
     """
@@ -73,21 +62,27 @@ def add_group_iam_permissions(bucket_name, group_email):
     Returns:
         bool: True if permissions are added successfully, False otherwise.
     """
+    storage_client = storage.Client()
     try:
-        storage_client = storage.Client()
+        # Attempt to get the bucket
         bucket = storage_client.get_bucket(bucket_name)
-
-        policy = bucket.get_iam_policy()
-        viewer_role = "roles/storage.objectViewer"
-        policy[viewer_role].add("group:" + group_email)
-        bucket.set_iam_policy(policy)
-
-        log.info("Read and list permissions granted to group {} on bucket {}"
-                 .format(group_email, bucket_name))
-        return True
+    except NotFound:
+        # This block will execute if the bucket is not found
+        raise RuntimeError("Bucket '{}' not found.".format(bucket_name))
     except Exception as e:
-        log.error("Error modifying bucket IAM policy: {}".format(e))
-        return False
+        # This block will execute for any other exceptions
+        raise RuntimeError("An error occurred getting bucket info: {}".format(e))
+
+    policy = bucket.get_iam_policy()
+    response = check_err_response_from_gcp(policy, "Error getting Iam policiy")
+    log.info("Iam policy {}".format(response))
+    
+    viewer_role = "roles/storage.objectViewer"
+    policy[viewer_role].add("group:" + group_email)
+    response = bucket.set_iam_policy(policy)
+    response = check_err_response_from_gcp(response, "Error modifying bucket IAM policy")
+    log.info("Read and list permissions granted to group {} on bucket {}:  IAM Policy is now:\n{}"
+                .format(group_email, bucket_name, response))
 
 def upload_to_gcp_bucket(bucket_name, destination_blob_name, source_file_name):
     """
@@ -98,11 +93,30 @@ def upload_to_gcp_bucket(bucket_name, destination_blob_name, source_file_name):
     :param source_file_name: File to upload.
     """
     storage_client = storage.Client()
-    bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(destination_blob_name)
 
     try:
+        # Ensure the source file exists
+        if not os.path.exists(source_file_name):
+            raise FileNotFoundError("The source file {} does not exist.".format(source_file_name))
+
+        # Get the bucket
+        bucket = storage_client.get_bucket(bucket_name)
+
+        # Create a blob object
+        blob = bucket.blob(destination_blob_name)
+
+        # Attempt to upload the file
         blob.upload_from_filename(source_file_name)
-        log.info("File {} uploaded to {}.".format(source_file_name, destination_blob_name))
+    except FileNotFoundError as e:
+        # Handle the file not found error specifically
+        log.error("File not found: {}".format(e))
+        raise
+    except GoogleCloudError as e:
+        # Handle Google Cloud specific exceptions
+        log.error("An error occurred with Google Cloud Storage: {}".format(e))
+        raise UploadError("Failed to upload {} to {}/{}".format(source_file_name,bucket_name, destination_blob_name))
     except Exception as e:
-        log.error("An error occurred: {}".format(e))
+        # Handle any other exceptions
+        log.error("An unexpected error occurred: {}".format(e))
+        raise UploadError("Unexpected error during upload: {}".format(e))
+   

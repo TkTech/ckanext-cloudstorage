@@ -65,6 +65,11 @@ def run():
     org_members = ckan_manager.get_members_for_single_org(args.organization)
     orgs_with_desc = ckan_manager.get_organization_description(args.organization)
     active_users = ckan_manager.get_active_users()
+    log.info("="*100)
+    log.info("org_members: {}".format(org_members))
+    log.info("orgs_with_desc: {}".format(orgs_with_desc))
+    log.info("active_users: {}".format(active_users))
+    log.info("="*100)
 
     service_account_key_path = SERVICE_ACCOUNT_KEY_PATH
     auth_session = create_id_token_and_auth_session(service_account_key_path)
@@ -72,11 +77,14 @@ def run():
     manager = OrganizationGroupManager(auth_session, GCP_BASE_URL, DOMAIN, PREFIX)
     log.info("Process {} to create groups and add members".format(args.organization))
     log.info("="*100)
-    response_obj = manager.process_organizations(orgs_with_desc, org_members, active_users)
-    if response_obj['success'] == False:
-        log.error("Failed processing organization {}.".format(args.organization))
+    if orgs_with_desc and org_members and active_users:
+        manager.process_organizations(orgs_with_desc, org_members, active_users)
+        log.info("Sucessfully process organization {}.".format(args.organization))
+        log.info("="*100)
+    else:
+        log.warning("Not all data available for organization {}. Skipping...".format(args.organization))
         exit(-1)
-    
+
     log.info("Retrieve packages, and resources for {}".format(args.organization))
     log.info("="*100)
     data = ckan_manager.get_data_for_single_org(args.organization)

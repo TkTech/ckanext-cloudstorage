@@ -1,5 +1,6 @@
 # encoding: utf-8
 import logging
+import os
 import ckan.plugins as plugins
 import ckan.logic as logic
 from pylons import config
@@ -14,11 +15,6 @@ from ckanext.cloudstorage.group_service import AddMemberGroupCommand
 from ckanext.cloudstorage.group_service import UpdateMemberGroupCommand
 from ckanext.cloudstorage.group_service import GetMemberGroupCommand
 from ckanext.cloudstorage.group_service import DeleteMemberGroupCommand
-from ckanext.cloudstorage.exception import GCPGroupCreationError
-from ckanext.cloudstorage.exception import GCPGroupDeletionError
-from ckanext.cloudstorage.exception import GCPGroupMemberAdditionError
-from ckanext.cloudstorage.exception import GCPGroupMemberUpdateError
-from ckanext.cloudstorage.exception import GCPGroupMemberRemovalError
 from ckanext.cloudstorage.storage import CloudStorage
 from ckanext.cloudstorage.authorization import create_id_token_and_auth_session
 from ckan.common import _, request
@@ -63,7 +59,7 @@ def organization_create(next_auth, context, data_dict):
     Returns:
         dict: Modified 'data_dict' after processing, passed to the next function in chain.
     """
-
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = SERVICE_ACCOUNT_KEYPATH
     log.info("Starting organization creation process with GCP group workspace option.")
 
     url = "https://gcp.fao.org/groups-service/api/v1/groups"
@@ -105,10 +101,7 @@ def organization_create(next_auth, context, data_dict):
     }
     cloud_storage = CloudStorage()
     create_group = CreateGroupsCommand(auth_session, url, payload, cloud_storage)
-    response = create_group.execute()
-    if response == False:
-        log.error("Error during GCP group creation")
-        raise GCPGroupCreationError(message="Error during GCP group creation")
+    create_group.execute()
     log.info("GCP group %s created successfully.", group_email)
 
     # Add sysadmin user as owner of gcp group
@@ -116,11 +109,7 @@ def organization_create(next_auth, context, data_dict):
     url = "https://gcp.fao.org/groups-service/api/v1/groups/{}/members".format(group_email)
     payload = {"email": member_email, "role": map_role[role], "deliverySettings": "NONE"}
     add_member_to_gcp = AddMemberGroupCommand(auth_session, url, payload)
-    response = add_member_to_gcp.execute()
-    if response["success"] == False:
-        log.error("Error adding member %s to GCP group %s", member_email, group_email)
-        raise GCPGroupMemberAdditionError(member_email, group_name)
-
+    add_member_to_gcp.execute()
     log.info("Added member %s to GCP group %s as %s.", member_email, group_email, map_role[role])
     log.info("Organization creation with GCP group workspace completed successfully.")
     # Proceed to the next action in the chain
@@ -208,11 +197,7 @@ def organization_delete(next_auth, context, data_dict):
     auth_session = create_id_token_and_auth_session(SERVICE_ACCOUNT_KEYPATH)    
     # Create a command to delete the group and execute it
     delete_group = DeleteGroupsCommand(auth_session, url)
-    response = delete_group.execute()
-    if response == False:
-        log.error("Error when trying to delete GCP group %s", group_email)
-        raise GCPGroupDeletionError(message="Error when trying to delete GCP group")
-
+    delete_group.execute()
     log.info("GCP group %s deleted successfully.", group_email)
     log.info("Organization deletion with corresponding GCP group workspace completed successfully.")
 
@@ -290,9 +275,6 @@ def organization_member_create(next_auth, context, data_dict):
     auth_session = create_id_token_and_auth_session(SERVICE_ACCOUNT_KEYPATH)   
     get_member_from_gcp = GetMemberGroupCommand(auth_session, url)
     response = get_member_from_gcp.execute()
-    if response["success"] == False:
-        log.error("Error checking for member existence in GCP group")
-        raise Exception("Error checking for member existence in GCP group")
     log.info("Response received for member existence check: %s", response)
 
     status = response["response"][u"status"]
@@ -300,10 +282,7 @@ def organization_member_create(next_auth, context, data_dict):
         # If member exists, update their role
         payload = {"email": member_email, "role": map_role[role], "deliverySettings": "NONE"}
         update_member = UpdateMemberGroupCommand(auth_session, url, payload)
-        response = update_member.execute()
-        if response == False:
-            log.error("Error updating member %s in GCP group %s", member_email, group_email)
-            raise GCPGroupMemberUpdateError(member_email, group_name)
+        update_member.execute()
         log.info("Member %s updated in GCP group %s with role %s.", member_email, group_email, map_role[role])
     else:
         # If member does not exist, add them to the group
@@ -311,9 +290,6 @@ def organization_member_create(next_auth, context, data_dict):
         payload = {"email": member_email, "role": map_role[role], "deliverySettings": "NONE"}
         add_member_to_gcp = AddMemberGroupCommand(auth_session, url, payload)
         response = add_member_to_gcp.execute()
-        if response == False:
-            log.error("Error adding member %s to GCP group %s", member_email, group_email)
-            raise GCPGroupMemberAdditionError(member_email, group_name)   
         log.info("Member %s added to GCP group %s with role %s.", member_email, group_email, map_role[role])
 
     log.info("Process to create or update a member in a GCP group workspace completed successfully.")
@@ -376,11 +352,7 @@ def organization_member_delete(next_auth, context, data_dict):
     url = "https://gcp.fao.org/groups-service/api/v1/groups/{}/members/{}".format(group_email, member_email)
     auth_session = create_id_token_and_auth_session(SERVICE_ACCOUNT_KEYPATH)    
     delete_member_from_gcp = DeleteMemberGroupCommand(auth_session, url)
-    response = delete_member_from_gcp.execute()
-    if response == False:
-        log.error("Error when trying to delete member %s from GCP group %s", member_email, group_email)
-        raise GCPGroupMemberRemovalError(member_email, group_name)
-
+    delete_member_from_gcp.execute()
     log.info("Member %s deleted from GCP group %s successfully.", member_email, group_email)
     log.info("Member deletion from GCP group workspace completed successfully.")
 

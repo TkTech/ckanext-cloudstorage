@@ -7,7 +7,7 @@ class GCPGroupDeletionError(Exception):
 
     def __init__(self, message="Error occurred during GCP group deletion"):
         self.message = message
-        super().__init__(self.message)
+        super(GCPGroupDeletionError, self).__init__(self.message)
 
 
 class GCPGroupCreationError(Exception):
@@ -19,7 +19,7 @@ class GCPGroupCreationError(Exception):
 
     def __init__(self, message="Error occurred during GCP group creation"):
         self.message = message
-        super().__init__(self.message)
+        super(GCPGroupCreationError, self).__init__(self.message)
         
 
 class GCPGroupMemberAdditionError(Exception):
@@ -37,7 +37,7 @@ class GCPGroupMemberAdditionError(Exception):
         self.group_name = group_name
         if message is None:
             message = "Failed to add member {} to GCP group {}.".format(member_email, group_name)
-        super().__init__(message)
+        super(GCPGroupMemberAdditionError, self).__init__(message)
 
 
 class GCPGroupMemberRemovalError(Exception):
@@ -55,7 +55,32 @@ class GCPGroupMemberRemovalError(Exception):
         self.group_name = group_name
         if message is None:
             message = "Failed to remove member {} from GCP group {}.".format(member_email, group_name)
-        super().__init__(message)
+        super(GCPGroupMemberRemovalError, self).__init__(message)
+
+
+class GetMemberGroupCommandError(Exception):
+    """Exception raised for errors retrieving member info from group.
+
+    Attributes:
+        message -- explanation of the error
+    """
+
+    def __init__(self, message="Error occurred retrieving member info from group"):
+        self.message = message
+        super(GetMemberGroupCommandError, self).__init__(self.message)
+
+
+class GetGroupCommandError(Exception):
+    """Exception raised for errors retrieving group info.
+
+    Attributes:
+        message -- explanation of the error
+    """
+
+    def __init__(self, message="Error occurred retrieving group info"):
+        self.message = message
+        super(GetGroupCommandError, self).__init__(self.message)
+
 
 
 class GCPGroupMemberUpdateError(Exception):
@@ -73,4 +98,4 @@ class GCPGroupMemberUpdateError(Exception):
         self.group_name = group_name
         if message is None:
             message = "Failed to update member {} in GCP group {}.".format(member_email, group_name)
-        super().__init__(message)
+        super(GCPGroupMemberUpdateError, self).__init__(message)

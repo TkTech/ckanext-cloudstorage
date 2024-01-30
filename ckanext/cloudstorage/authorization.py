@@ -2,6 +2,11 @@ from google.oauth2 import service_account
 from google.auth.transport.requests import AuthorizedSession
 
 
+class AuthorizedSessionError(Exception):
+    """Custom exception for upload failures."""
+    pass
+
+
 def create_id_token_and_auth_session(service_account_json_file, target_audience="https://groups.fao.org"):
     """
     Generates an ID token using a GCP service account and makes a POST request.
@@ -18,12 +23,15 @@ def create_id_token_and_auth_session(service_account_json_file, target_audience=
              can be used for authenticated HTTP requests to the specified target audience.
     """
     # Load the service account credentials and create an ID token
-    credentials = service_account.IDTokenCredentials.from_service_account_file(
-        service_account_json_file, 
-        target_audience=target_audience
-    )
+    try:
+        credentials = service_account.IDTokenCredentials.from_service_account_file(
+            service_account_json_file, 
+            target_audience=target_audience
+        )
 
-    # Create an authorized session using the credentials
-    auth_session = AuthorizedSession(credentials)
+        # Create an authorized session using the credentials
+        auth_session = AuthorizedSession(credentials)
 
-    return auth_session
+        return auth_session
+    except Exception as e:
+        raise AuthorizedSessionError("Error creating authorized session: {}".format(e))

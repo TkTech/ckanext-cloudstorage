@@ -7,6 +7,15 @@ from ckanext.cloudstorage.group_service import AddMemberGroupCommand
 # Configure Logging
 log = logging.getLogger('OrganizationGroupManager')
 
+
+class ProcessOrganizationError(Exception):
+    pass
+
+
+class AddingMembersError(Exception):
+    pass
+
+
 class OrganizationGroupManager:
     """
     Manages group creation and member addition for each CKAN organization.
@@ -33,8 +42,8 @@ class OrganizationGroupManager:
             orgs_with_desc (dict): A list of organizations to process.
         """
         responses = []
-        for organization, description in orgs_with_desc.items():
-            try:
+        try:
+            for organization, description in orgs_with_desc.items():
                 log.info("organization : {}".format(organization))
                 group_name = self.prefix + organization
                 group_email = self.prefix + organization + "@" + self.domain
@@ -45,24 +54,22 @@ class OrganizationGroupManager:
                     "description": description
                 }
                 get_group_response = self.get_group(group_email)
-                group_response = {}
                 if get_group_response["success"] == True:
                     if get_group_response[u"response"][u"status"] == 200:
                         log.warning("Group <{}> already exists.".format(group_name))
                     elif get_group_response[u"response"][u"status"] == 404:
                         log.info("Group <{}>  does not exist yet.".format(group_name))
-                        group_response = self.create_group(payload)
+                        self.create_group(payload)
                     else:
                         log.error("Group <{}> has not been created.".format(group_name))
-                else:
-                    return {"success": False, "response": None}
-                
+
                 members_response = self.add_members(organization, group_email, org_members, active_users)
-                responses.append((group_response, members_response))
-            except Exception as e:
-                log.error("Error processing organization {0}: {1}".format(organization, e))
-                return False
-        return {"success": True, "response": responses}
+                responses.append(members_response)
+                return {"success": True, "response": responses}
+        except Exception as e:
+            log.error("Error processing organization {0}: {1}".format(organization, e))
+            raise ProcessOrganizationError("Error processing organization {0}: {1}".format(organization, e))
+        
 
     def create_group(self, payload):
         """
@@ -95,23 +102,18 @@ class OrganizationGroupManager:
         """
         add_member_url = self.base_url + '/groups/{}/members'.format(group_email)
         member_responses = []
-        for org, users_roles in org_members.items():
-            if org == organization:
-                for username, role in users_roles.items():
-                    member_email = active_users.get(username, '')
-                    log.info("Adding {} to group {}.".format(member_email, group_email))
-                    # Mapping of internal roles to GCP group roles
-                    map_role = {"admin": "MANAGER", "editor": "MEMBER", "member": "MEMBER", "sysadmin": "OWNER"}
-                    payload = {"email": member_email, "role": map_role[role], "deliverySettings": "NONE"}
-                    add_member_command = AddMemberGroupCommand(self.auth_session, add_member_url, payload)
-                    member_response = add_member_command.execute()
-                    if member_response["success"] == True:
-                        if member_response["response"][u"status"] == 409:
-                            log.warning("Member {} already exists.".format(member_email))
-                        elif member_response["response"][u"status"] == 201:
-                            log.warning("Member {} has been successfully added to {}.".format(member_email, group_email))
-                            member_responses.append(member_response)
-                    else:
-                        log.error("Member {} was not added to {}.".format(member_email, group_email))
-                        continue
-            return member_responses
+        try:
+            for org, users_roles in org_members.items():
+                if org == organization:
+                    for username, role in users_roles.items():
+                        member_email = active_users.get(username, '')
+                        log.info("Adding {} to group {}.".format(member_email, group_email))
+                        # Mapping of internal roles to GCP group roles
+                        map_role = {"admin": "MANAGER", "editor": "MEMBER", "member": "MEMBER", "sysadmin": "OWNER"}
+                        payload = {"email": member_email, "role": map_role[role], "deliverySettings": "NONE"}
+                        add_member_command = AddMemberGroupCommand(self.auth_session, add_member_url, payload)
+                        member_response = add_member_command.execute()
+                        member_responses.append(member_response)
+                    return member_responses
+        except Exception as e:
+            raise AddingMembersError("Error adding member to group: {}".format(e))
