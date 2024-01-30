@@ -68,7 +68,6 @@ def run():
     log.info("="*100)
     log.info("org_members: {}".format(org_members))
     log.info("orgs_with_desc: {}".format(orgs_with_desc))
-    log.info("active_users: {}".format(active_users))
     log.info("="*100)
 
     service_account_key_path = SERVICE_ACCOUNT_KEY_PATH

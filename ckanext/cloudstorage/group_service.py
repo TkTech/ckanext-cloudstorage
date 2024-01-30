@@ -10,7 +10,7 @@ from ckanext.cloudstorage.exception import GCPGroupDeletionError
 from ckanext.cloudstorage.exception import GetMemberGroupCommandError
 from ckanext.cloudstorage.exception import GCPGroupMemberUpdateError
 from ckanext.cloudstorage.exception import GCPGroupMemberRemovalError
-from ckanext.cloudstorage.exception import GetGroupCommandError
+from ckanext.cloudstorage.exception import GetGroupMembersCommandError
 
 log = logging.getLogger(__name__)
 
@@ -57,9 +57,9 @@ class CreateGroupsCommand(Command):
             log.error("Error in group creation or bucket setup: {}".format(e))
             raise GCPGroupCreationError("Error in group creation or bucket setup: {}".format(e))
 
-class GetGroupsCommand(Command):
+class GetGroupMembersCommand(Command):
     """
-    Concrete command to retrieve groups using a GET request.
+    Concrete command to retrieve group memebers using a GET request.
     """
     def __init__(self, auth_session, url):
         self.auth_session = auth_session
@@ -71,8 +71,8 @@ class GetGroupsCommand(Command):
             response.raise_for_status()  # Raises an HTTPError for bad responses
             return {"success": True, "response": response.json()}
         except Exception as e:
-            log.error("Unexpected Error retrieving group: {}".format(e))
-            raise GetGroupCommandError("Unexpected Error retrieving group: {}".format(e))
+            log.error("Unexpected Error retrieving group memebers: {}".format(e))
+            raise GetGroupMembersCommandError("Unexpected Error retrieving group: {}".format(e))
 
 
 class AddMemberGroupCommand(Command):

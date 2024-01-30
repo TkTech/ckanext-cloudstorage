@@ -1,7 +1,7 @@
 import logging
 
 from ckanext.cloudstorage.group_service import CreateGroupsCommand
-from ckanext.cloudstorage.group_service import GetGroupsCommand
+from ckanext.cloudstorage.group_service import GetGroupMembersCommand
 from ckanext.cloudstorage.group_service import AddMemberGroupCommand
 
 # Configure Logging
@@ -53,7 +53,7 @@ class OrganizationGroupManager:
                     "email": group_email,
                     "description": description
                 }
-                get_group_response = self.get_group(group_email)
+                get_group_response = self.get_group_members(group_email)
                 if get_group_response["success"] == True:
                     if get_group_response[u"response"][u"status"] == 200:
                         log.warning("Group <{}> already exists.".format(group_name))
@@ -82,15 +82,15 @@ class OrganizationGroupManager:
         create_group_command = CreateGroupsCommand(self.auth_session, create_group_url, payload)
         return create_group_command.execute()
 
-    def get_group(self, group_email):
+    def get_group_members(self, group_email):
         """
-        Retrieve a group for the organization.
+        Retrieve a group members for the organization.
 
         Args:
             organization (dict): Organization data.
         """
         get_group_url = self.base_url + "/groups/{}/members".format(group_email)
-        get_group_command = GetGroupsCommand(self.auth_session, get_group_url)
+        get_group_command = GetGroupMembersCommand(self.auth_session, get_group_url)
         return get_group_command.execute()
 
     def add_members(self, organization, group_email, org_members, active_users):
