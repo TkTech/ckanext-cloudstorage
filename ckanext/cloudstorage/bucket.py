@@ -115,7 +115,7 @@ def upload_to_gcp_bucket(
         try:
             bucket = storage_client.get_bucket(bucket_name)
         except NotFound:
-            log.warnig("Bucket {} does not exist, creating it.".format(bucket_name))
+            log.warning("Bucket {} does not exist, creating it.".format(bucket_name))
             create_bucket(bucket_name,cloud_storage)
             bucket = storage_client.get_bucket(bucket_name)
             add_group_iam_permissions(bucket_name, group_email)
