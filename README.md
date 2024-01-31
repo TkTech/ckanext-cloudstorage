@@ -135,7 +135,21 @@ python etl_run.py organization_name ckan_api_key configuration_file
    using, if supported.
 2. Currently, only resources are supported. This means that things like group
    and organization images still use CKAN's local file storage.
+3. Make sure the vm instance has the correct scopes. If not use this command below to set right scopes:
 
+    ```bash
+    gcloud beta compute instances set-scopes [INSTANCE_NAME] --scopes=https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/devstorage.full_control [--zone=[ZONE]]
+
+    ```
+    and restart the vm instance after to allow changes to be applied.
+    
+4. Check if scopes has been apply correctly by using this command below:
+
+    ```bash
+
+    gcloud compute instances describe [INSTANCE_NAME] --format='get(serviceAccounts[].scopes[])'
+
+    ```
 
 ## License
 This project is licensed under the MIT License - see the LICENSE file for details.
@@ -146,14 +160,3 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [ckan](http://ckan.org/)
 - [storage](https://libcloud.readthedocs.io/en/latest/storage/supported_providers.html)
 - [ckanstorage](http://docs.ckan.org/en/latest/maintaining/filestore.html#setup-file-uploads)
-
-
-# FAQ
-
-- *DataViews aren't showing my data!* - did you setup CORS rules properly on
-  your hosting service? ckanext-cloudstorage can try to fix them for you automatically,
-  run:
-
-        paster cloudstorage fix-cors <list of your domains> -c=<CKAN config>
-
-- *Help! I can't seem to get it working!* - send me a mail! tk@tkte.ch

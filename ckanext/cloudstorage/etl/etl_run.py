@@ -60,8 +60,8 @@ def run():
     log.info("="*100)
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = SERVICE_ACCOUNT_KEY_PATH
 
-    ckan_manager = CKANManager(CKAN_BASE_URL, STORAGE_DIR, args.ckan_api_key, PREFIX)
-    
+    ckan_manager = CKANManager(CKAN_BASE_URL, STORAGE_DIR, args.ckan_api_key, PREFIX, DOMAIN)
+
     org_members = ckan_manager.get_members_for_single_org(args.organization)
     orgs_with_desc = ckan_manager.get_organization_description(args.organization)
     active_users = ckan_manager.get_active_users()

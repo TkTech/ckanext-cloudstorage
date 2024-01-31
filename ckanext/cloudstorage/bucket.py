@@ -89,7 +89,13 @@ def add_group_iam_permissions(bucket_name, group_email):
              .format(group_email, bucket_name, response))
 
 
-def upload_to_gcp_bucket(bucket_name, destination_blob_name, source_file_name):
+def upload_to_gcp_bucket(
+    bucket_name,
+    destination_blob_name,
+    source_file_name,
+    cloud_storage=None,
+    group_email=None
+):
     """
     Uploads a file to the bucket.
 
@@ -105,8 +111,14 @@ def upload_to_gcp_bucket(bucket_name, destination_blob_name, source_file_name):
             raise IOError(
                 "The source file {} does not exist.".format(source_file_name))
 
-        # Get the bucket
-        bucket = storage_client.get_bucket(bucket_name)
+        # Try to get the bucket, create it if it does not exist
+        try:
+            bucket = storage_client.get_bucket(bucket_name)
+        except NotFound:
+            log.warnig("Bucket {} does not exist, creating it.".format(bucket_name))
+            create_bucket(bucket_name,cloud_storage)
+            bucket = storage_client.get_bucket(bucket_name)
+            add_group_iam_permissions(bucket_name, group_email)
 
         # Create a blob object
         blob = bucket.blob(destination_blob_name)
