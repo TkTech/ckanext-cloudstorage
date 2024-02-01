@@ -59,7 +59,7 @@ class CreateGroupsCommand(Command):
 
 class GetGroupMembersCommand(Command):
     """
-    Concrete command to retrieve group memebers using a GET request.
+    Concrete command to retrieve group members using a GET request.
     """
     def __init__(self, auth_session, url):
         self.auth_session = auth_session
@@ -71,6 +71,9 @@ class GetGroupMembersCommand(Command):
             response.raise_for_status()  # Raises an HTTPError for bad responses
             return {"success": True, "response": response.json()}
         except Exception as e:
+            if response.json()[u"status"] == 404:
+                log.warning("Group members not found: {}".format(e))
+                return {"success": True, "response": response.json()}
             log.error("Unexpected Error retrieving group memebers: {}".format(e))
             raise GetGroupMembersCommandError("Unexpected Error retrieving group: {}".format(e))
 
@@ -111,6 +114,9 @@ class GetMemberGroupCommand(Command):
             response.raise_for_status()  # Raises an HTTPError for bad responses
             return {"success": True, "response": response.json()}
         except Exception as e:
+            if response.json()[u"status"] == 404:
+                log.warning("Group member not found: {}".format(e))
+                return {"success": True, "response": response.json()}
             log.error("Unexpected error when retrieving a member from a group: {}".format(e))
             raise GetMemberGroupCommandError("Unexpected error when retrieving a member from a group: {}".format(e))
 
