@@ -6,7 +6,9 @@ import os.path
 from ckanext.cloudstorage import storage
 from ckanext.cloudstorage import helpers
 import ckanext.cloudstorage.logic.action.multipart as m_action
+import ckanext.cloudstorage.logic.action.action as org_action
 import ckanext.cloudstorage.logic.auth.multipart as m_auth
+import ckanext.cloudstorage.logic.auth.auth as org_auth
 
 
 class CloudStoragePlugin(plugins.SingletonPlugin):
@@ -89,6 +91,11 @@ class CloudStoragePlugin(plugins.SingletonPlugin):
             'cloudstorage_abort_multipart': m_action.abort_multipart,
             'cloudstorage_check_multipart': m_action.check_multipart,
             'cloudstorage_clean_multipart': m_action.clean_multipart,
+            'organization_create': org_action.organization_create,
+            'organization_update': org_action.organization_update,
+            'organization_delete': org_action.organization_delete,
+            'organization_member_create': org_action.organization_member_create,
+            'organization_member_delete': org_action.organization_member_delete,
         }
 
     # IAuthFunctions
